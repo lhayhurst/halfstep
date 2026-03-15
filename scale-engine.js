@@ -116,6 +116,43 @@ function pickNextRoot(roots, currentRoot, pinnedRoot, orderMode, circleOfFifths,
   return { root: r, circleIndex };
 }
 
+// ── Mastery tracking ──────────────────────────────────────────
+const MASTERY_THRESHOLD = 3;
+
+function createEmptyMastery() {
+  const m = {};
+  ROOTS.forEach(root => {
+    m[root] = { guidedClean: 0, shadowClean: 0, blindClean: 0 };
+  });
+  return m;
+}
+
+function recordCleanRound(mastery, root, mode) {
+  const copy = {};
+  for (const key in mastery) {
+    copy[key] = { ...mastery[key] };
+  }
+  if (mode === 'guided') copy[root].guidedClean++;
+  else if (mode === 'shadowed') copy[root].shadowClean++;
+  else if (mode === 'blind') copy[root].blindClean++;
+  return copy;
+}
+
+function getMasteryLevel(scaleRecord) {
+  const { guidedClean, shadowClean, blindClean } = scaleRecord;
+  if (blindClean >= MASTERY_THRESHOLD && shadowClean >= MASTERY_THRESHOLD && guidedClean >= MASTERY_THRESHOLD) return 'master';
+  if (shadowClean >= MASTERY_THRESHOLD && guidedClean >= MASTERY_THRESHOLD) return 'gold';
+  if (guidedClean >= MASTERY_THRESHOLD) return 'silver';
+  return 'none';
+}
+
+function getMasteryProgress(scaleRecord, mode) {
+  const count = mode === 'guided' ? scaleRecord.guidedClean
+    : mode === 'shadowed' ? scaleRecord.shadowClean
+    : scaleRecord.blindClean;
+  return { count, threshold: MASTERY_THRESHOLD, complete: count >= MASTERY_THRESHOLD };
+}
+
 function matchStrictNote(playedMidi, expectedMidi) {
   return playedMidi === expectedMidi;
 }
@@ -146,6 +183,11 @@ const ScaleEngine = {
   pickNextRoot,
   matchStrictNote,
   matchFreeNote,
+  MASTERY_THRESHOLD,
+  createEmptyMastery,
+  recordCleanRound,
+  getMasteryLevel,
+  getMasteryProgress,
 };
 
 if (typeof module !== 'undefined' && module.exports) {

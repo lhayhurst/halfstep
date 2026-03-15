@@ -21,14 +21,14 @@
 - [x] Settings panel (difficulty, theme, scale order)
 - [x] Help overlay (? button)
 - [x] Three themes: Clean, Dark, Warm
+- [x] Progressive mastery tracking (silver → gold → master per scale)
+- [x] Explicit state machine: Free Play / Training / Round Complete
+- [x] Start/Stop button for training sessions
+- [x] Session journal with per-round results table
 - [x] PWA with offline support
 
 ## Scale Trainer Enhancements
-- [ ] Free mode: start/stop session, play freely within a key, report at end
-  - Notes hit vs missed
-  - Time spent
-  - Heatmap of scale degrees played
-- [ ] Better round report: modal/card with accuracy, mistakes, time, mini replay
+- [ ] Free mode: extended free play with heatmap of scale degrees played
 - [ ] Minor scales (natural, harmonic, melodic)
 
 ## Chord Mode

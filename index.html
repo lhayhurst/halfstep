@@ -162,6 +162,21 @@ h1 {
   color: var(--fg);
 }
 
+#scale-picker button.mastery-silver {
+  border-color: #a0a0a0;
+  box-shadow: 0 0 6px rgba(160,160,160,0.4);
+}
+
+#scale-picker button.mastery-gold {
+  border-color: #f59e0b;
+  box-shadow: 0 0 6px rgba(245,158,11,0.4);
+}
+
+#scale-picker button.mastery-master {
+  border-color: #22c55e;
+  box-shadow: 0 0 6px rgba(34,197,94,0.4);
+}
+
 #scale-picker button.active,
 #direction-picker button.active {
   background: var(--accent);
@@ -548,8 +563,83 @@ main {
   overflow-y: auto;
 }
 
+/* ── Start/Stop button ─────────────────────────── */
+#start-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1.8rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  transition: opacity 0.15s;
+}
+
+#start-btn:hover { opacity: 0.85; }
+
+#start-btn.stop {
+  background: var(--surface);
+  color: var(--fg-dim);
+  border: 1px solid var(--header-border);
+  font-size: 0.85rem;
+  padding: 0.35rem 1.2rem;
+}
+
+/* ── Phase-aware visibility ────────────────────── */
+main[data-phase="FREE_PLAY"] #feedback-area,
+main[data-phase="FREE_PLAY"] #note-progress,
+main[data-phase="FREE_PLAY"] #round-complete { display: none; }
+
+main[data-phase="FREE_PLAY"] #prompt-area { opacity: 0.5; }
+
+main[data-phase="TRAINING"] #journal,
+main[data-phase="ROUND_COMPLETE"] #journal { display: none; }
+
+main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
+
+/* ── Journal ───────────────────────────────────── */
+#journal {
+  width: 100%;
+  max-width: 740px;
+  margin-top: 0.5rem;
+}
+
+#journal summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--fg-dim);
+  text-align: center;
+  padding: 0.3rem;
+}
+
+#journal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+  margin-top: 0.4rem;
+}
+
+#journal-table th {
+  text-align: left;
+  color: var(--fg-dim);
+  font-weight: 600;
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--header-border);
+}
+
+#journal-table td {
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--surface);
+}
+
+#journal-table .clean-yes { color: var(--green); }
+#journal-table .clean-no { color: var(--fg-dim); }
+
 </style>
 <script src="scale-engine.js"></script>
+<script src="training-session.js"></script>
 </head>
 <body>
 <script>window.onerror = function(msg, src, line) {
@@ -600,15 +690,28 @@ main {
       <p><strong>Correct notes</strong> flash green and advance. <strong>Wrong notes</strong> flash red and show you what was expected — play the right note to continue.</p>
       <p><strong>Streak</strong> counts consecutive perfect rounds. One mistake resets it.</p>
     </div>
+    <h3>Mastery</h3>
+    <div class="help-text">
+      <p>Each scale tracks your progress. Get 3 perfect rounds at each difficulty level to advance:</p>
+      <p><strong style="color:#a0a0a0">Silver</strong> — 3 clean rounds in Guided</p>
+      <p><strong style="color:#f59e0b">Gold</strong> — 3 clean rounds in Shadow</p>
+      <p><strong style="color:#22c55e">Master</strong> — 3 clean rounds in Blind</p>
+      <p>Your progress is shown as a colored bar under each scale button.</p>
+    </div>
     <h3>Difficulty Modes</h3>
     <div class="help-text">
       <p><strong>Guided</strong> — all scale notes are highlighted on the keyboard with labels. Great for learning new keys.</p>
       <p><strong>Shadow</strong> — only the root note is marked. You need to know the scale from memory.</p>
       <p><strong>Blind</strong> — the keyboard is hidden entirely. Pure ear and muscle memory.</p>
     </div>
+    <h3>Training Flow</h3>
+    <div class="help-text">
+      <p><strong>Free Play</strong> is the default — the piano works as a regular instrument. Chords work too!</p>
+      <p>Hit <strong>Start</strong> to begin a drill. Complete the scale or hit <strong>Stop</strong> to bail out.</p>
+      <p>After each round, your results are logged in the <strong>Session Log</strong> at the bottom.</p>
+    </div>
     <h3>Tips</h3>
     <div class="help-text">
-      <p>Play freely between rounds — the piano works as a regular instrument. Chords work too!</p>
       <p>MIDI keyboards require Chrome or Edge. The on-screen keyboard works in any browser.</p>
       <p>Use the MIDI Monitor at the bottom to debug your MIDI connection.</p>
     </div>
@@ -616,13 +719,15 @@ main {
   </div>
 </div>
 
-<main>
+<main data-phase="FREE_PLAY">
 
 <div id="scale-picker"></div>
 <div id="direction-picker"></div>
 
+<button id="start-btn">Start</button>
+
 <div id="prompt-area">
-  <div id="scale-prompt">Play the C major scale</div>
+  <div id="scale-prompt">Pick a scale and hit Start</div>
   <div id="theory-tip"></div>
 </div>
 
@@ -648,6 +753,15 @@ main {
   <div id="wrong-summary"></div>
 </div>
 
+<details id="journal" open>
+  <summary>Session Log (0 rounds)</summary>
+  <table id="journal-table">
+    <thead><tr>
+      <th>#</th><th>Scale</th><th>Dir</th><th>Mode</th><th>Acc</th><th>Clean</th><th>Time</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+</details>
 
 </main>
 
@@ -657,32 +771,41 @@ main {
 </div>
 
 <script>
-// ── Scale Engine loaded from scale-engine.js as ScaleEngine global ──
-// All constants (ROOTS, CIRCLE_OF_FIFTHS, etc.) and functions
-// (getScaleNotes, getScaleMidiNotes) accessed via ScaleEngine.*
-
-// ── State ─────────────────────────────────────────────────────
-let currentRoot = 'C';
-let currentScale = [];
-let currentMidiScale = [];
-let highlightScale = [];
-let highlightMidi = [];
-let expectedIndex = 0;
-let attempts = 0;
-let correctCount = 0;
-let streak = 0;
-let roundMistakes = [];
-let roundActive = true;
-let mode = 'guided';
+// ── App State (driven by TrainingSession reducer) ─────────────
+let state = TrainingSession.createSession({ mastery: loadMastery() });
 let pinnedRoot = 'random';
-let direction = 'ascending'; // ascending | descending | both
+let direction = 'ascending';
+let mode = localStorage.getItem('halfstep-mode') || 'guided';
 let audioCtx = null;
 let midiAccess = null;
+let activeMidiInput = null;
+let acknowledgeTimer = null;
+
+function loadMastery() {
+  try {
+    const stored = localStorage.getItem('halfstep-mastery');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      const empty = ScaleEngine.createEmptyMastery();
+      for (const root in empty) {
+        if (parsed[root]) empty[root] = parsed[root];
+      }
+      return empty;
+    }
+  } catch (e) {}
+  return ScaleEngine.createEmptyMastery();
+}
+
+function saveMastery() {
+  localStorage.setItem('halfstep-mastery', JSON.stringify(state.mastery));
+}
 
 // ── DOM refs ──────────────────────────────────────────────────
+const mainEl = document.querySelector('main');
 const pianoEl = document.getElementById('piano');
 const scalePickerEl = document.getElementById('scale-picker');
 const dirPickerEl = document.getElementById('direction-picker');
+const startBtn = document.getElementById('start-btn');
 const promptEl = document.getElementById('scale-prompt');
 const tipEl = document.getElementById('theory-tip');
 const feedbackEl = document.getElementById('feedback-text');
@@ -693,6 +816,8 @@ const celebrationEl = document.getElementById('celebration');
 const roundCompleteEl = document.getElementById('round-complete');
 const roundMsgEl = document.getElementById('round-msg');
 const wrongSumEl = document.getElementById('wrong-summary');
+const journalEl = document.getElementById('journal');
+const journalBody = document.querySelector('#journal-table tbody');
 const midiDot = document.getElementById('midi-dot');
 const midiSelect = document.getElementById('midi-select');
 const pianoContainer = document.getElementById('piano-container');
@@ -709,23 +834,25 @@ const helpOverlay = document.getElementById('help-overlay');
 const helpClose = document.getElementById('help-close');
 
 // ── MIDI Monitor ──────────────────────────────────────────────
-monitorToggle.addEventListener('click', () => {
-  monitorLog.classList.toggle('open');
-});
+monitorToggle.addEventListener('click', () => monitorLog.classList.toggle('open'));
+
+function midiLog(html) {
+  const entry = document.createElement('div');
+  entry.className = 'entry';
+  entry.innerHTML = html;
+  monitorLog.appendChild(entry);
+  while (monitorLog.children.length > 50) monitorLog.removeChild(monitorLog.firstChild);
+  monitorLog.scrollTop = monitorLog.scrollHeight;
+}
 
 // ── Settings ──────────────────────────────────────────────────
 settingsBtn.addEventListener('click', () => settingsOverlay.classList.add('open'));
 settingsClose.addEventListener('click', () => settingsOverlay.classList.remove('open'));
-settingsOverlay.addEventListener('click', (e) => {
-  if (e.target === settingsOverlay) settingsOverlay.classList.remove('open');
-});
+settingsOverlay.addEventListener('click', e => { if (e.target === settingsOverlay) settingsOverlay.classList.remove('open'); });
 
-// ── Help ──────────────────────────────────────────────────────
 helpBtn.addEventListener('click', () => helpOverlay.classList.add('open'));
 helpClose.addEventListener('click', () => helpOverlay.classList.remove('open'));
-helpOverlay.addEventListener('click', (e) => {
-  if (e.target === helpOverlay) helpOverlay.classList.remove('open');
-});
+helpOverlay.addEventListener('click', e => { if (e.target === helpOverlay) helpOverlay.classList.remove('open'); });
 
 // Difficulty mode
 const MODES = [
@@ -733,9 +860,6 @@ const MODES = [
   { label: 'Shadow', value: 'shadowed' },
   { label: 'Blind', value: 'blind' },
 ];
-
-mode = localStorage.getItem('halfstep-mode') || 'guided';
-
 MODES.forEach(m => {
   const btn = document.createElement('button');
   btn.textContent = m.label;
@@ -756,10 +880,8 @@ const THEMES = [
   { label: 'Clean', value: 'clean' },
   { label: 'Warm', value: 'warm' },
 ];
-
 let currentTheme = localStorage.getItem('halfstep-theme') || 'clean';
 document.documentElement.setAttribute('data-theme', currentTheme);
-
 THEMES.forEach(t => {
   const btn = document.createElement('button');
   btn.textContent = t.label;
@@ -779,11 +901,8 @@ const SCALE_ORDERS = [
   { label: 'Circle of 5ths', value: 'fifths' },
   { label: 'Chromatic', value: 'chromatic' },
 ];
-
 const CHROMATIC_ROOTS = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
-
 let scaleOrder = localStorage.getItem('halfstep-scale-order') || 'fifths';
-
 SCALE_ORDERS.forEach(o => {
   const btn = document.createElement('button');
   btn.textContent = o.label;
@@ -793,85 +912,50 @@ SCALE_ORDERS.forEach(o => {
     localStorage.setItem('halfstep-scale-order', o.value);
     scaleOrderGroup.querySelectorAll('button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    rebuildScalePicker();
+    buildScalePicker();
   });
   scaleOrderGroup.appendChild(btn);
 });
 
-function midiLog(html) {
-  const entry = document.createElement('div');
-  entry.className = 'entry';
-  entry.innerHTML = html;
-  monitorLog.appendChild(entry);
-  // Keep last 50 entries
-  while (monitorLog.children.length > 50) monitorLog.removeChild(monitorLog.firstChild);
-  monitorLog.scrollTop = monitorLog.scrollHeight;
-}
-
-// ── Build on-screen keyboard ──────────────────────────────────
+// ── On-screen keyboard ────────────────────────────────────────
 const FIRST_MIDI = 48;
 const LAST_MIDI = 72;
 const WHITE_NOTES = [0,2,4,5,7,9,11];
 const keyElements = {};
 
-function isWhite(midi) {
-  return WHITE_NOTES.includes(midi % 12);
-}
+function isWhite(midi) { return WHITE_NOTES.includes(midi % 12); }
 
 function buildPiano() {
   pianoEl.innerHTML = '';
-  const WHITE_W = 42;
-  const WHITE_GAP = 1;
-
+  const WHITE_W = 42, WHITE_GAP = 1;
   let totalWhites = 0;
-  for (let m = FIRST_MIDI; m <= LAST_MIDI; m++) {
-    if (isWhite(m)) totalWhites++;
-  }
+  for (let m = FIRST_MIDI; m <= LAST_MIDI; m++) { if (isWhite(m)) totalWhites++; }
   pianoEl.style.width = (totalWhites * (WHITE_W + WHITE_GAP)) + 'px';
 
-  const whites = [];
-  const blacks = [];
+  const whites = [], blacks = [];
   let wx = 0;
   for (let m = FIRST_MIDI; m <= LAST_MIDI; m++) {
-    if (isWhite(m)) {
-      whites.push({ midi: m, x: wx });
-      wx += WHITE_W + WHITE_GAP;
-    }
+    if (isWhite(m)) { whites.push({ midi: m, x: wx }); wx += WHITE_W + WHITE_GAP; }
   }
-
   for (let i = 0; i < whites.length - 1; i++) {
-    const cur = whites[i].midi;
-    const next = whites[i + 1].midi;
-    if (next - cur === 2) {
-      blacks.push({ midi: cur + 1, x: whites[i].x + WHITE_W - 12 });
-    }
+    if (whites[i + 1].midi - whites[i].midi === 2)
+      blacks.push({ midi: whites[i].midi + 1, x: whites[i].x + WHITE_W - 12 });
   }
 
-  whites.forEach(w => {
+  function createKey(data, cls) {
     const el = document.createElement('div');
-    el.className = 'key white';
-    el.style.left = w.x + 'px';
-    el.dataset.midi = w.midi;
+    el.className = 'key ' + cls;
+    el.style.left = data.x + 'px';
+    el.dataset.midi = data.midi;
     const lbl = document.createElement('span');
     lbl.className = 'label';
     el.appendChild(lbl);
     pianoEl.appendChild(el);
-    keyElements[w.midi] = el;
-    el.addEventListener('pointerdown', e => { e.preventDefault(); handleNote(w.midi); });
-  });
-
-  blacks.forEach(b => {
-    const el = document.createElement('div');
-    el.className = 'key black';
-    el.style.left = b.x + 'px';
-    el.dataset.midi = b.midi;
-    const lbl = document.createElement('span');
-    lbl.className = 'label';
-    el.appendChild(lbl);
-    pianoEl.appendChild(el);
-    keyElements[b.midi] = el;
-    el.addEventListener('pointerdown', e => { e.preventDefault(); handleNote(b.midi); });
-  });
+    keyElements[data.midi] = el;
+    el.addEventListener('pointerdown', e => { e.preventDefault(); handleNote(data.midi); });
+  }
+  whites.forEach(w => createKey(w, 'white'));
+  blacks.forEach(b => createKey(b, 'black'));
 }
 
 // ── Scale picker ──────────────────────────────────────────────
@@ -879,36 +963,49 @@ function getOrderedRoots() {
   return scaleOrder === 'chromatic' ? CHROMATIC_ROOTS : ScaleEngine.ROOTS;
 }
 
+function applyMasteryClass(btn, root) {
+  btn.classList.remove('mastery-silver', 'mastery-gold', 'mastery-master');
+  if (root === 'random' || !state.mastery[root]) return;
+  const level = ScaleEngine.getMasteryLevel(state.mastery[root]);
+  if (level !== 'none') btn.classList.add('mastery-' + level);
+}
+
 function buildScalePicker() {
   scalePickerEl.innerHTML = '';
-  const allOptions = ['Random', ...getOrderedRoots()];
-  allOptions.forEach(label => {
+  ['Random', ...getOrderedRoots()].forEach(label => {
     const btn = document.createElement('button');
     btn.textContent = label;
     btn.dataset.root = label === 'Random' ? 'random' : label;
     if (btn.dataset.root === pinnedRoot) btn.classList.add('active');
+    applyMasteryClass(btn, btn.dataset.root);
     btn.addEventListener('click', () => {
       pinnedRoot = btn.dataset.root;
       scalePickerEl.querySelectorAll('button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      startRound();
+      // If training, stop and return to free play
+      if (state.phase === 'TRAINING') {
+        state = TrainingSession.transition(state, TrainingSession.actions.stopRound());
+      } else if (state.phase === 'ROUND_COMPLETE') {
+        if (acknowledgeTimer) { clearTimeout(acknowledgeTimer); acknowledgeTimer = null; }
+        state = TrainingSession.transition(state, TrainingSession.actions.acknowledge());
+      }
+      render();
     });
     scalePickerEl.appendChild(btn);
   });
 }
 
-function rebuildScalePicker() {
-  buildScalePicker();
+function updateMasteryIndicators() {
+  scalePickerEl.querySelectorAll('button').forEach(btn => applyMasteryClass(btn, btn.dataset.root));
 }
 
-// ── Direction picker ───────────────────────────────────────────
+// ── Direction picker ──────────────────────────────────────────
 function buildDirectionPicker() {
-  const options = [
+  [
     { label: 'Ascending', value: 'ascending' },
     { label: 'Descending', value: 'descending' },
     { label: 'Up & Down', value: 'both' },
-  ];
-  options.forEach(opt => {
+  ].forEach(opt => {
     const btn = document.createElement('button');
     btn.textContent = opt.label;
     btn.dataset.dir = opt.value;
@@ -917,86 +1014,146 @@ function buildDirectionPicker() {
       direction = opt.value;
       dirPickerEl.querySelectorAll('button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      startRound();
+      if (state.phase === 'TRAINING') {
+        state = TrainingSession.transition(state, TrainingSession.actions.stopRound());
+      } else if (state.phase === 'ROUND_COMPLETE') {
+        if (acknowledgeTimer) { clearTimeout(acknowledgeTimer); acknowledgeTimer = null; }
+        state = TrainingSession.transition(state, TrainingSession.actions.acknowledge());
+      }
+      render();
     });
     dirPickerEl.appendChild(btn);
   });
 }
 
-// ── Build expected sequence based on direction ────────────────
-function buildExpectedSequence(scaleNotes, midiNotes) {
-  if (direction === 'ascending') {
-    return { names: [...scaleNotes], midi: [...midiNotes] };
-  }
-  if (direction === 'descending') {
-    return { names: [...scaleNotes].reverse(), midi: [...midiNotes].reverse() };
-  }
-  // both: up then down (skip the repeated top note)
-  const namesUp = [...scaleNotes];
-  const midiUp = [...midiNotes];
-  const namesDown = [...scaleNotes].reverse().slice(1);
-  const midiDown = [...midiNotes].reverse().slice(1);
-  return {
-    names: [...namesUp, ...namesDown],
-    midi: [...midiUp, ...midiDown],
-  };
-}
-
-// ── Pick next root ────────────────────────────────────────────
+// ── Pick root ─────────────────────────────────────────────────
 function pickRoot() {
   if (pinnedRoot !== 'random') return pinnedRoot;
   const roots = getOrderedRoots();
+  const current = state.round ? state.round.root : '';
   let r;
-  do { r = roots[Math.floor(Math.random() * roots.length)]; } while (r === currentRoot && roots.length > 1);
+  do { r = roots[Math.floor(Math.random() * roots.length)]; } while (r === current && roots.length > 1);
   return r;
 }
 
-// ── Start round ───────────────────────────────────────────────
-function startRound() {
-  currentRoot = pickRoot();
-  const rawScale = ScaleEngine.getScaleNotes(currentRoot);
-  let startOctave = 3;
-  const rootSemi = ScaleEngine.NAME_TO_SEMI[currentRoot];
-  const baseMidi = 12 * (startOctave + 1) + rootSemi;
-  if (baseMidi + 12 > LAST_MIDI) startOctave = 2;
-  const adjBase = 12 * (startOctave + 1) + rootSemi;
-  if (adjBase < FIRST_MIDI) startOctave = 3;
-
-  const rawMidi = ScaleEngine.getScaleMidiNotes(currentRoot, startOctave);
-  // Store ascending scale for keyboard highlights
-  highlightScale = rawScale;
-  highlightMidi = rawMidi;
-  // Build the expected sequence for this direction
-  const seq = buildExpectedSequence(rawScale, rawMidi);
-  currentScale = seq.names;
-  currentMidiScale = seq.midi;
-
-  expectedIndex = 0;
-  attempts = 0;
-  correctCount = 0;
-  roundMistakes = [];
-  roundActive = true;
-
-  const dirLabel = direction === 'both' ? '(up & down)' : direction === 'descending' ? '(descending)' : '';
-  promptEl.textContent = `Play the ${currentRoot} major scale ${dirLabel}`.trim();
-  tipEl.textContent = ScaleEngine.TIPS[currentRoot] || '';
-  feedbackEl.textContent = '';
-  celebrationEl.textContent = '';
-  accuracyEl.textContent = '\u2013';
-  roundCompleteEl.classList.remove('show');
-
-  updateProgressDots();
-  updateKeyboard();
+// ── Start / Stop ──────────────────────────────────────────────
+function updateStartButton() {
+  if (state.phase === 'TRAINING') {
+    startBtn.textContent = 'Stop \u25A0';
+    startBtn.classList.add('stop');
+  } else if (state.phase === 'ROUND_COMPLETE') {
+    startBtn.style.display = 'none';
+  } else {
+    startBtn.style.display = '';
+    startBtn.classList.remove('stop');
+    const root = pinnedRoot === 'random' ? 'Random' : pinnedRoot;
+    startBtn.textContent = `Start ${root} Major \u25B6`;
+  }
 }
 
-// ── Progress dots ─────────────────────────────────────────────
-function updateProgressDots() {
+startBtn.addEventListener('click', () => {
+  if (state.phase === 'TRAINING') {
+    state = TrainingSession.transition(state, TrainingSession.actions.stopRound());
+    render();
+  } else {
+    doStartRound();
+  }
+});
+
+function doStartRound() {
+  if (acknowledgeTimer) { clearTimeout(acknowledgeTimer); acknowledgeTimer = null; }
+  const root = pickRoot();
+  const startOctave = ScaleEngine.chooseStartOctave(root, FIRST_MIDI, LAST_MIDI);
+  state = TrainingSession.transition(state, TrainingSession.actions.startRound(root, direction, mode, startOctave, Date.now()));
+  render();
+}
+
+// ── Handle note input ─────────────────────────────────────────
+function handleNote(midi) {
+  playTone(midi);
+  pressKey(midi);
+
+  if (state.phase !== 'TRAINING') {
+    midiLog(`<span class="skip">free play</span>`);
+    return;
+  }
+
+  const prev = state;
+  state = TrainingSession.transition(state, TrainingSession.actions.playNote(midi, Date.now()));
+
+  // UI feedback based on what changed
+  const prevIdx = prev.round.expectedIndex;
+  const newIdx = state.round ? state.round.expectedIndex : state.result ? prev.round.scaleNames.length : prevIdx;
+  const advanced = newIdx > prevIdx;
+
+  if (advanced) {
+    flashKey(midi, 'flash-green');
+    const expectedMidi = prev.round.scaleMidi[prevIdx];
+    if (midi !== expectedMidi) flashKey(expectedMidi, 'flash-green');
+    markDot(prevIdx, 'hit');
+    feedbackEl.innerHTML = `<span style="color:var(--green)">\u2713 ${prev.round.scaleNames[prevIdx]}</span>`;
+    midiLog(`  <span class="match">MATCH</span> ${prev.round.scaleNames[prevIdx]}`);
+  } else {
+    const expectedMidi = state.round.scaleMidi[state.round.expectedIndex];
+    flashKey(midi, 'flash-red');
+    flashKey(expectedMidi, 'flash-green', 600);
+    const playedName = ScaleEngine.midiToNoteName(midi);
+    feedbackEl.innerHTML = `<span style="color:var(--red)">\u2717 ${playedName}</span> \u2014 expected <strong>${state.round.scaleNames[state.round.expectedIndex]}</strong>`;
+    midiLog(`  <span class="miss">MISS</span> played ${playedName}, expected ${state.round.scaleNames[state.round.expectedIndex]}`);
+  }
+
+  if (state.phase === 'ROUND_COMPLETE') {
+    saveMastery();
+    renderRoundComplete();
+    playScaleBack();
+    // Auto-acknowledge after 4 seconds
+    acknowledgeTimer = setTimeout(() => {
+      state = TrainingSession.transition(state, TrainingSession.actions.acknowledge());
+      render();
+    }, 4000);
+  }
+}
+
+// ── Rendering ─────────────────────────────────────────────────
+function render() {
+  mainEl.setAttribute('data-phase', state.phase);
+  updateStartButton();
+  renderPrompt();
+  renderProgress();
+  renderKeyboard();
+  renderStats();
+  renderJournal();
+  updateMasteryIndicators();
+
+  if (state.phase !== 'ROUND_COMPLETE') {
+    roundCompleteEl.classList.remove('show');
+  }
+  if (state.phase === 'FREE_PLAY') {
+    feedbackEl.textContent = '';
+  }
+}
+
+function renderPrompt() {
+  if (state.phase === 'FREE_PLAY') {
+    promptEl.textContent = 'Pick a scale and hit Start';
+    tipEl.textContent = '';
+  } else if (state.round) {
+    const dir = state.round.direction;
+    const dirLabel = dir === 'both' ? '(up & down)' : dir === 'descending' ? '(descending)' : '';
+    promptEl.textContent = `Play the ${state.round.root} major scale ${dirLabel}`.trim();
+    tipEl.textContent = ScaleEngine.TIPS[state.round.root] || '';
+  }
+}
+
+function renderProgress() {
   progressEl.innerHTML = '';
-  currentScale.forEach((name, i) => {
+  if (!state.round) return;
+  state.round.scaleNames.forEach((name, i) => {
     const dot = document.createElement('div');
     dot.className = 'dot';
     dot.textContent = name;
-    if (i === expectedIndex && roundActive) dot.classList.add('active');
+    if (state.phase === 'TRAINING' && i === state.round.expectedIndex) dot.classList.add('active');
+    if (i < (state.round.expectedIndex || 0)) dot.classList.add('hit');
     progressEl.appendChild(dot);
   });
 }
@@ -1007,33 +1164,38 @@ function markDot(index, cls) {
     dots[index].classList.add(cls);
     dots[index].classList.remove('active');
   }
-  if (cls === 'hit') {
-    const nextDot = dots[expectedIndex];
-    if (nextDot && roundActive) nextDot.classList.add('active');
+  if (cls === 'hit' && state.round) {
+    const nextDot = dots[state.round.expectedIndex];
+    if (nextDot && state.phase === 'TRAINING') nextDot.classList.add('active');
   }
 }
 
-// ── Update keyboard display ───────────────────────────────────
+function renderKeyboard() {
+  updateKeyboard();
+}
+
 function updateKeyboard() {
   pianoContainer.style.display = mode === 'blind' ? 'none' : '';
-
   Object.values(keyElements).forEach(el => {
     el.classList.remove('scale-highlight', 'root-mark');
     el.querySelector('.label').textContent = '';
   });
 
+  if (!state.round) return;
+  const hNames = state.round.highlightNames;
+  const hMidi = state.round.highlightMidi;
+
   if (mode === 'guided') {
-    highlightMidi.forEach((midi, i) => {
+    hMidi.forEach((midi, i) => {
       const el = keyElements[midi];
       if (el) {
         el.classList.add('scale-highlight');
-        el.querySelector('.label').textContent = highlightScale[i];
+        el.querySelector('.label').textContent = hNames[i];
       }
     });
   }
-
   if (mode === 'guided' || mode === 'shadowed') {
-    highlightMidi.forEach((midi, i) => {
+    hMidi.forEach((midi, i) => {
       if (i === 0 || i === 7) {
         const el = keyElements[midi];
         if (el) el.classList.add('root-mark');
@@ -1042,7 +1204,66 @@ function updateKeyboard() {
   }
 }
 
-// ── Flash key ─────────────────────────────────────────────────
+function renderStats() {
+  streakEl.textContent = state.streak;
+  if (state.phase === 'ROUND_COMPLETE' && state.result) {
+    accuracyEl.textContent = state.result.accuracy + '%';
+  } else if (state.phase === 'FREE_PLAY') {
+    accuracyEl.textContent = '\u2013';
+    celebrationEl.textContent = '';
+  }
+}
+
+function renderRoundComplete() {
+  if (!state.result) return;
+  const { result } = state;
+
+  // Celebration
+  const prevMastery = ScaleEngine.getMasteryLevel(
+    ScaleEngine.recordCleanRound(ScaleEngine.createEmptyMastery(), 'C', 'guided') // dummy — check real
+  );
+  if (result.clean) {
+    const level = ScaleEngine.getMasteryLevel(state.mastery[result.root]);
+    const progress = ScaleEngine.getMasteryProgress(state.mastery[result.root], result.mode);
+    const modeLabel = result.mode === 'guided' ? 'Guided' : result.mode === 'shadowed' ? 'Shadow' : 'Blind';
+    const progressText = progress.complete ? `${modeLabel} \u2713` : `${modeLabel} ${progress.count}/${progress.threshold}`;
+    roundMsgEl.textContent = `Perfect! (${progressText})`;
+
+    if (state.streak === 3) celebrationEl.textContent = 'Nice! 3 in a row!';
+    else if (state.streak === 5) celebrationEl.textContent = 'On fire! 5 streak!';
+    else if (state.streak === 10) celebrationEl.textContent = 'Unstoppable! 10 streak!';
+    else celebrationEl.textContent = '';
+  } else {
+    roundMsgEl.textContent = `${result.accuracy}% accuracy`;
+    celebrationEl.textContent = '';
+  }
+
+  if (result.mistakes.length > 0) {
+    wrongSumEl.innerHTML = '<strong>Mistakes:</strong> ' +
+      result.mistakes.map(m => `played ${ScaleEngine.midiToNoteName(m.playedMidi)}, expected ${m.expectedName}`).join(' \u00b7 ');
+  } else {
+    wrongSumEl.textContent = '';
+  }
+
+  roundCompleteEl.classList.add('show');
+  mainEl.setAttribute('data-phase', 'ROUND_COMPLETE');
+  updateStartButton();
+}
+
+function renderJournal() {
+  const j = state.journal;
+  journalEl.querySelector('summary').textContent = `Session Log (${j.length} round${j.length !== 1 ? 's' : ''})`;
+  journalBody.innerHTML = '';
+  j.forEach(entry => {
+    const tr = document.createElement('tr');
+    const secs = (entry.durationMs / 1000).toFixed(1);
+    const dirShort = entry.direction === 'ascending' ? '\u2191' : entry.direction === 'descending' ? '\u2193' : '\u2195';
+    tr.innerHTML = `<td>${entry.id}</td><td>${entry.root}</td><td>${dirShort}</td><td>${entry.mode === 'guided' ? 'G' : entry.mode === 'shadowed' ? 'S' : 'B'}</td><td>${entry.accuracy}%</td><td class="${entry.clean ? 'clean-yes' : 'clean-no'}">${entry.clean ? '\u2713' : '\u2717'}</td><td>${secs}s</td>`;
+    journalBody.appendChild(tr);
+  });
+}
+
+// ── Flash & press (visual side effects) ───────────────────────
 function flashKey(midi, cls, duration = 300) {
   const el = keyElements[midi];
   if (!el) return;
@@ -1058,17 +1279,12 @@ function pressKey(midi) {
 }
 
 // ── Piano samples ─────────────────────────────────────────────
-// Files use flat naming: C3, Db3, D3, Eb3, ... (no sharps)
-const SAMPLE_NAMES = [
-  'C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'
-];
-const sampleBuffers = {};  // midi -> AudioBuffer
+const SAMPLE_NAMES = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const sampleBuffers = {};
 let samplesLoaded = false;
 
 function midiToSamplePath(midi) {
-  const note = SAMPLE_NAMES[midi % 12];
-  const octave = Math.floor(midi / 12) - 1;
-  return 'samples/' + note + octave + '.mp3';
+  return 'samples/' + SAMPLE_NAMES[midi % 12] + (Math.floor(midi / 12) - 1) + '.mp3';
 }
 
 async function loadSamples() {
@@ -1083,7 +1299,7 @@ async function loadSamples() {
         .then(r => r.arrayBuffer())
         .then(buf => audioCtx.decodeAudioData(buf))
         .then(decoded => { sampleBuffers[m] = decoded; })
-        .catch(() => {}) // graceful fallback — synth will be used
+        .catch(() => {})
     );
   }
   await Promise.all(loads);
@@ -1096,7 +1312,6 @@ function playTone(midi) {
     catch (e) { return; }
   }
   if (audioCtx.state === 'suspended') audioCtx.resume();
-
   if (sampleBuffers[midi]) {
     const src = audioCtx.createBufferSource();
     src.buffer = sampleBuffers[midi];
@@ -1104,8 +1319,6 @@ function playTone(midi) {
     src.start();
     return;
   }
-
-  // Fallback: simple sine tone if sample not loaded yet
   const freq = 440 * Math.pow(2, (midi - 69) / 12);
   const now = audioCtx.currentTime;
   const osc = audioCtx.createOscillator();
@@ -1120,94 +1333,10 @@ function playTone(midi) {
   osc.stop(now + 1);
 }
 
-// ── MIDI note name (for feedback) ─────────────────────────────
-const midiToName = ScaleEngine.midiToNoteName;
-
-// ── Handle note input ─────────────────────────────────────────
-function handleNote(midi) {
-  if (!roundActive) {
-    midiLog(`<span class="skip">ignored (round not active)</span>`);
-    playTone(midi);
-    pressKey(midi);
-    return;
-  }
-
-  playTone(midi);
-  pressKey(midi);
-
-  attempts++;
-  handleStrictNote(midi);
-}
-
-function handleStrictNote(midi) {
-  const expectedMidi = currentMidiScale[expectedIndex];
-  const playedPitchClass = midi % 12;
-  const expectedPitchClass = expectedMidi % 12;
-
-  midiLog(`  expect <span class="note">${currentScale[expectedIndex]}</span> (pc:${expectedPitchClass}) got pc:${playedPitchClass} \u2192 ${playedPitchClass === expectedPitchClass ? '<span class="match">MATCH</span>' : '<span class="miss">MISS</span>'}`);
-
-  if (playedPitchClass === expectedPitchClass) {
-    correctCount++;
-    flashKey(midi, 'flash-green');
-    // Also flash the on-screen key in the displayed octave
-    if (midi !== expectedMidi) flashKey(expectedMidi, 'flash-green');
-    markDot(expectedIndex, 'hit');
-    feedbackEl.innerHTML = `<span style="color:var(--green)">\u2713 ${currentScale[expectedIndex]}</span>`;
-    expectedIndex++;
-    if (expectedIndex >= currentScale.length) {
-      completeRound();
-    }
-  } else {
-    flashKey(midi, 'flash-red');
-    flashKey(expectedMidi, 'flash-green', 600);
-    const playedName = midiToName(midi);
-    feedbackEl.innerHTML = `<span style="color:var(--red)">\u2717 ${playedName}</span> \u2014 expected <strong>${currentScale[expectedIndex]}</strong>`;
-    roundMistakes.push({ played: playedName, expected: currentScale[expectedIndex] });
-  }
-}
-
-// ── Complete round ────────────────────────────────────────────
-function completeRound() {
-  roundActive = false;
-  const acc = Math.round((correctCount / attempts) * 100);
-  accuracyEl.textContent = acc + '%';
-
-  const clean = roundMistakes.length === 0;
-  if (clean) {
-    streak++;
-  } else {
-    streak = 0;
-  }
-  streakEl.textContent = streak;
-
-  if (streak === 3) celebrationEl.textContent = 'Nice! 3 in a row!';
-  else if (streak === 5) celebrationEl.textContent = 'On fire! 5 streak!';
-  else if (streak === 10) celebrationEl.textContent = 'Unstoppable! 10 streak!';
-  else celebrationEl.textContent = '';
-
-  roundMsgEl.textContent = clean ? 'Perfect!' : `${acc}% accuracy`;
-
-  if (roundMistakes.length > 0) {
-    wrongSumEl.innerHTML = '<strong>Mistakes:</strong> ' +
-      roundMistakes.map(m => `played ${m.played}, expected ${m.expected}`).join(' \u00b7 ');
-  } else {
-    wrongSumEl.textContent = '';
-  }
-
-  roundCompleteEl.classList.add('show');
-  playScaleBack();
-}
-
-
-// ── Web Audio playback ────────────────────────────────────────
 function playScaleBack() {
-  if (!audioCtx) {
-    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-    catch (e) { return; }
-  }
-
+  if (!audioCtx || !state.round) return;
   const now = audioCtx.currentTime;
-  currentMidiScale.forEach((midi, i) => {
+  state.round.scaleMidi.forEach((midi, i) => {
     if (sampleBuffers[midi]) {
       const src = audioCtx.createBufferSource();
       src.buffer = sampleBuffers[midi];
@@ -1234,19 +1363,15 @@ function playScaleBack() {
 }
 
 // ── MIDI ──────────────────────────────────────────────────────
-let activeMidiInput = null;
-
-function setMidiDot(state) {
+function setMidiDot(s) {
   midiDot.classList.remove('connected', 'error');
-  if (state) midiDot.classList.add(state);
+  if (s) midiDot.classList.add(s);
 }
 
 function populateMidiPorts() {
   if (!midiAccess) return;
   const prev = midiSelect.value;
-  // Keep the placeholder, clear the rest
   while (midiSelect.options.length > 1) midiSelect.remove(1);
-
   midiAccess.inputs.forEach((port, id) => {
     if (port.state !== 'connected') return;
     const opt = document.createElement('option');
@@ -1254,30 +1379,16 @@ function populateMidiPorts() {
     opt.textContent = port.name + (port.manufacturer ? ' (' + port.manufacturer + ')' : '');
     midiSelect.appendChild(opt);
   });
-
-  // Re-select previous if still present
-  if (prev && [...midiSelect.options].some(o => o.value === prev)) {
-    midiSelect.value = prev;
-  }
+  if (prev && [...midiSelect.options].some(o => o.value === prev)) midiSelect.value = prev;
 }
 
 function listenToInput(portId) {
   if (!midiAccess) return;
-  // Detach previous
   if (activeMidiInput) activeMidiInput.onmidimessage = null;
   activeMidiInput = null;
-
-  if (!portId) {
-    setMidiDot(null);
-    return;
-  }
-
+  if (!portId) { setMidiDot(null); return; }
   const port = midiAccess.inputs.get(portId);
-  if (!port || port.state !== 'connected') {
-    setMidiDot('error');
-    return;
-  }
-
+  if (!port || port.state !== 'connected') { setMidiDot('error'); return; }
   activeMidiInput = port;
   port.onmidimessage = (msg) => {
     const d = msg.data;
@@ -1287,7 +1398,6 @@ function listenToInput(portId) {
     const note = d[1];
     const vel = d[2];
     const name = ScaleEngine.midiToNoteName(note);
-
     if (status === 0x90 && vel > 0) {
       midiLog(`<span class="ch">ch${ch}</span> NoteOn <span class="note">${name}</span> (${note}) <span class="vel">vel:${vel}</span>`);
       handleNote(note);
@@ -1300,9 +1410,7 @@ function listenToInput(portId) {
   setMidiDot('connected');
 }
 
-midiSelect.addEventListener('change', () => {
-  listenToInput(midiSelect.value);
-});
+midiSelect.addEventListener('change', () => listenToInput(midiSelect.value));
 
 async function initMIDI() {
   if (!navigator.requestMIDIAccess) {
@@ -1310,26 +1418,17 @@ async function initMIDI() {
     midiSelect.disabled = true;
     return;
   }
-
   midiSelect.options[0].textContent = 'Requesting MIDI access\u2026';
-
   let timer;
-  const timeout = new Promise((_, rej) => {
-    timer = setTimeout(() => rej(new Error('timeout')), 4000);
-  });
-
+  const timeout = new Promise((_, rej) => { timer = setTimeout(() => rej(new Error('timeout')), 4000); });
   try {
     midiAccess = await Promise.race([navigator.requestMIDIAccess(), timeout]);
     clearTimeout(timer);
     midiSelect.options[0].textContent = 'Select MIDI device\u2026';
-
     populateMidiPorts();
-
-    // Hot-plug support
     midiAccess.onstatechange = () => {
       setTimeout(() => {
         populateMidiPorts();
-        // If active port disconnected, clear it
         if (activeMidiInput && activeMidiInput.state !== 'connected') {
           activeMidiInput = null;
           midiSelect.value = '';
@@ -1346,6 +1445,13 @@ async function initMIDI() {
   }
 }
 
+// ── Keyboard shortcuts ────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && !e.repeat) {
+    e.preventDefault();
+    startBtn.click();
+  }
+});
 
 // ── Service Worker ────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
@@ -1356,7 +1462,7 @@ if ('serviceWorker' in navigator) {
 buildPiano();
 buildScalePicker();
 buildDirectionPicker();
-startRound();
+render();
 loadSamples();
 initMIDI();
 </script>

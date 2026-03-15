@@ -451,3 +451,137 @@ describe('Gb major (enharmonic of F#)', () => {
     assert.deepEqual(gbMidi, fsMidi);
   });
 });
+
+// ── Mastery tracking ──────────────────────────────────────────
+
+describe('createEmptyMastery', () => {
+  it('returns mastery object for all roots', () => {
+    const m = SE.createEmptyMastery();
+    for (const root of SE.ROOTS) {
+      assert.deepEqual(m[root], { guidedClean: 0, shadowClean: 0, blindClean: 0 });
+    }
+  });
+
+  it('has exactly 12 keys', () => {
+    const m = SE.createEmptyMastery();
+    assert.equal(Object.keys(m).length, 12);
+  });
+});
+
+describe('recordCleanRound', () => {
+  it('increments guidedClean for guided mode', () => {
+    const m = SE.createEmptyMastery();
+    const updated = SE.recordCleanRound(m, 'C', 'guided');
+    assert.equal(updated['C'].guidedClean, 1);
+    assert.equal(updated['C'].shadowClean, 0);
+    assert.equal(updated['C'].blindClean, 0);
+  });
+
+  it('increments shadowClean for shadowed mode', () => {
+    const m = SE.createEmptyMastery();
+    const updated = SE.recordCleanRound(m, 'G', 'shadowed');
+    assert.equal(updated['G'].shadowClean, 1);
+  });
+
+  it('increments blindClean for blind mode', () => {
+    const m = SE.createEmptyMastery();
+    const updated = SE.recordCleanRound(m, 'D', 'blind');
+    assert.equal(updated['D'].blindClean, 1);
+  });
+
+  it('does not mutate the original object', () => {
+    const m = SE.createEmptyMastery();
+    const updated = SE.recordCleanRound(m, 'C', 'guided');
+    assert.equal(m['C'].guidedClean, 0);
+    assert.equal(updated['C'].guidedClean, 1);
+  });
+
+  it('accumulates across multiple rounds', () => {
+    let m = SE.createEmptyMastery();
+    m = SE.recordCleanRound(m, 'C', 'guided');
+    m = SE.recordCleanRound(m, 'C', 'guided');
+    m = SE.recordCleanRound(m, 'C', 'guided');
+    assert.equal(m['C'].guidedClean, 3);
+  });
+
+  it('tracks different scales independently', () => {
+    let m = SE.createEmptyMastery();
+    m = SE.recordCleanRound(m, 'C', 'guided');
+    m = SE.recordCleanRound(m, 'G', 'guided');
+    assert.equal(m['C'].guidedClean, 1);
+    assert.equal(m['G'].guidedClean, 1);
+    assert.equal(m['D'].guidedClean, 0);
+  });
+});
+
+describe('getMasteryLevel', () => {
+  it('returns "none" with no clean rounds', () => {
+    assert.equal(SE.getMasteryLevel({ guidedClean: 0, shadowClean: 0, blindClean: 0 }), 'none');
+  });
+
+  it('returns "none" with fewer than 3 guided cleans', () => {
+    assert.equal(SE.getMasteryLevel({ guidedClean: 2, shadowClean: 0, blindClean: 0 }), 'none');
+  });
+
+  it('returns "silver" with exactly 3 guided cleans', () => {
+    assert.equal(SE.getMasteryLevel({ guidedClean: 3, shadowClean: 0, blindClean: 0 }), 'silver');
+  });
+
+  it('returns "silver" with many guided but no shadow', () => {
+    assert.equal(SE.getMasteryLevel({ guidedClean: 10, shadowClean: 2, blindClean: 0 }), 'silver');
+  });
+
+  it('returns "gold" with 3+ guided and 3+ shadow', () => {
+    assert.equal(SE.getMasteryLevel({ guidedClean: 3, shadowClean: 3, blindClean: 0 }), 'gold');
+  });
+
+  it('returns "gold" with shadow but not enough blind', () => {
+    assert.equal(SE.getMasteryLevel({ guidedClean: 5, shadowClean: 4, blindClean: 2 }), 'gold');
+  });
+
+  it('returns "master" with 3+ in all three modes', () => {
+    assert.equal(SE.getMasteryLevel({ guidedClean: 3, shadowClean: 3, blindClean: 3 }), 'master');
+  });
+
+  it('returns "master" with high counts in all modes', () => {
+    assert.equal(SE.getMasteryLevel({ guidedClean: 10, shadowClean: 5, blindClean: 4 }), 'master');
+  });
+});
+
+describe('MASTERY_THRESHOLD', () => {
+  it('is 3', () => {
+    assert.equal(SE.MASTERY_THRESHOLD, 3);
+  });
+});
+
+describe('getMasteryProgress', () => {
+  it('returns count and threshold for guided mode', () => {
+    const rec = { guidedClean: 2, shadowClean: 0, blindClean: 0 };
+    const result = SE.getMasteryProgress(rec, 'guided');
+    assert.deepEqual(result, { count: 2, threshold: 3, complete: false });
+  });
+
+  it('returns complete true when at threshold', () => {
+    const rec = { guidedClean: 3, shadowClean: 0, blindClean: 0 };
+    const result = SE.getMasteryProgress(rec, 'guided');
+    assert.deepEqual(result, { count: 3, threshold: 3, complete: true });
+  });
+
+  it('returns complete true when above threshold', () => {
+    const rec = { guidedClean: 10, shadowClean: 0, blindClean: 0 };
+    const result = SE.getMasteryProgress(rec, 'guided');
+    assert.deepEqual(result, { count: 10, threshold: 3, complete: true });
+  });
+
+  it('works for shadowed mode', () => {
+    const rec = { guidedClean: 5, shadowClean: 1, blindClean: 0 };
+    const result = SE.getMasteryProgress(rec, 'shadowed');
+    assert.deepEqual(result, { count: 1, threshold: 3, complete: false });
+  });
+
+  it('works for blind mode', () => {
+    const rec = { guidedClean: 5, shadowClean: 5, blindClean: 3 };
+    const result = SE.getMasteryProgress(rec, 'blind');
+    assert.deepEqual(result, { count: 3, threshold: 3, complete: true });
+  });
+});

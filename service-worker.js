@@ -1,4 +1,4 @@
-const CACHE_NAME = 'halfstep-v14';
+const CACHE_NAME = 'halfstep-v18';
 
 const SAMPLE_NAMES = [
   'C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'
@@ -16,6 +16,7 @@ const ASSETS = [
   './',
   './index.html',
   './scale-engine.js',
+  './training-session.js',
   './manifest.json',
   './service-worker.js',
   ...SAMPLES
