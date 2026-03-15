@@ -7,7 +7,7 @@ run: ## Start a local dev server
 	@python3 -m http.server $(PORT)
 
 test: ## Run all tests
-	node --test scale-engine.test.js training-session.test.js
+	node --test scale-engine.test.js training-session.test.js melody-data.test.js melody-engine.test.js
 
 build: ## Validate that all required files exist and tests pass
 	@echo "Checking required files..."
@@ -15,7 +15,9 @@ build: ## Validate that all required files exist and tests pass
 	@test -f scale-engine.js || (echo "Missing scale-engine.js" && exit 1)
 	@test -f manifest.json   || (echo "Missing manifest.json"   && exit 1)
 	@test -f training-session.js || (echo "Missing training-session.js" && exit 1)
+	@test -f melody-data.js    || (echo "Missing melody-data.js"    && exit 1)
+	@test -f melody-engine.js  || (echo "Missing melody-engine.js"  && exit 1)
 	@test -f service-worker.js || (echo "Missing service-worker.js" && exit 1)
 	@echo "Running tests..."
-	@node --test scale-engine.test.js training-session.test.js
+	@node --test scale-engine.test.js training-session.test.js melody-data.test.js melody-engine.test.js
 	@echo "Build OK — all files present, all tests pass."

@@ -25,6 +25,13 @@
 - [x] Explicit state machine: Free Play / Training / Round Complete
 - [x] Start/Stop button for training sessions
 - [x] Session journal with per-round results table
+- [x] Melody Mode: Guitar Hero-style driving perspective with 3D lane
+- [x] 6 starter melodies (Ode to Joy, Twinkle Twinkle, Mary Had a Little Lamb, etc.)
+- [x] Scoring with accuracy, streak multiplier, and S/A/B/C/D rating
+- [x] Speed selector (Slow/Medium/Normal/Fast)
+- [x] 3D gem notes with scrolling fret lines
+- [x] Melody results in session journal
+- [x] Play in any key (melodies encoded as scale degrees)
 - [x] PWA with offline support
 
 ## Scale Trainer Enhancements

@@ -585,3 +585,94 @@ describe('getMasteryProgress', () => {
     assert.deepEqual(result, { count: 3, threshold: 3, complete: true });
   });
 });
+
+// ── Browser global scope compatibility ────────────────────────
+
+describe('all modules load in shared browser global scope', () => {
+  it('does not throw when scripts run sequentially in the same context', () => {
+    const vm = require('node:vm');
+    const fs = require('node:fs');
+    const path = require('node:path');
+
+    const files = [
+      'scale-engine.js',
+      'training-session.js',
+      'melody-data.js',
+      'melody-engine.js',
+    ];
+
+    // Concatenate all scripts (stripping module.exports) to simulate browser loading
+    let combined = '';
+    for (const file of files) {
+      const code = fs.readFileSync(path.join(__dirname, file), 'utf-8');
+      const browserCode = code.replace(
+        /if\s*\(\s*typeof\s+module\s*!==\s*'undefined'.*?\{[^}]*\}/s,
+        ''
+      );
+      combined += browserCode + '\n';
+    }
+
+    // Add assertions at the end to check globals are defined
+    combined += `
+      _result = {
+        ScaleEngine: typeof ScaleEngine !== 'undefined',
+        TrainingSession: typeof TrainingSession !== 'undefined',
+        MelodyData: typeof MelodyData !== 'undefined',
+        MelodyEngine: typeof MelodyEngine !== 'undefined',
+      };
+    `;
+
+    const context = vm.createContext({ console: console, setTimeout: setTimeout, clearTimeout: clearTimeout, _result: null });
+
+    try {
+      vm.runInContext(combined, context);
+    } catch (e) {
+      assert.fail(`Scripts threw in shared global scope: ${e.message}`);
+    }
+
+    assert.ok(context._result.ScaleEngine, 'ScaleEngine should be defined');
+    assert.ok(context._result.TrainingSession, 'TrainingSession should be defined');
+    assert.ok(context._result.MelodyData, 'MelodyData should be defined');
+    assert.ok(context._result.MelodyEngine, 'MelodyEngine should be defined');
+  });
+
+  it('modules can call each other after loading', () => {
+    const vm = require('node:vm');
+    const fs = require('node:fs');
+    const path = require('node:path');
+
+    const files = ['scale-engine.js', 'training-session.js', 'melody-data.js', 'melody-engine.js'];
+    let combined = '';
+    for (const file of files) {
+      const code = fs.readFileSync(path.join(__dirname, file), 'utf-8');
+      combined += code.replace(/if\s*\(\s*typeof\s+module\s*!==\s*'undefined'.*?\{[^}]*\}/s, '') + '\n';
+    }
+
+    // Simulate what the inline script does
+    combined += `
+      _result2 = {};
+      try {
+        var s = TrainingSession.createSession();
+        _result2.training = s.phase === 'FREE_PLAY';
+      } catch(e) { _result2.trainingError = e.message; }
+      try {
+        var ms = MelodyEngine.createMelodySession();
+        _result2.melody = ms.phase === 'IDLE';
+      } catch(e) { _result2.melodyError = e.message; }
+      try {
+        var md = MelodyData.getMelody('ode-to-joy');
+        _result2.data = md.name === 'Ode to Joy';
+      } catch(e) { _result2.dataError = e.message; }
+    `;
+
+    const context = vm.createContext({ console: console, setTimeout: setTimeout, clearTimeout: clearTimeout, _result2: null });
+    vm.runInContext(combined, context);
+
+    if (context._result2.trainingError) assert.fail('TrainingSession: ' + context._result2.trainingError);
+    if (context._result2.melodyError) assert.fail('MelodyEngine: ' + context._result2.melodyError);
+    if (context._result2.dataError) assert.fail('MelodyData: ' + context._result2.dataError);
+    assert.ok(context._result2.training, 'TrainingSession.createSession works');
+    assert.ok(context._result2.melody, 'MelodyEngine.createMelodySession works');
+    assert.ok(context._result2.data, 'MelodyData.getMelody works');
+  });
+});

@@ -637,9 +637,213 @@ main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
 #journal-table .clean-yes { color: var(--green); }
 #journal-table .clean-no { color: var(--fg-dim); }
 
+/* ── Mode tabs ─────────────────────────────────── */
+#mode-tabs {
+  display: flex;
+  gap: 0;
+  width: 100%;
+  max-width: 740px;
+  margin-bottom: 0.75rem;
+}
+
+#mode-tabs button {
+  flex: 1;
+  background: var(--surface);
+  color: var(--fg-dim);
+  border: 1px solid var(--header-border);
+  padding: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+#mode-tabs button:first-child { border-radius: 8px 0 0 8px; }
+#mode-tabs button:last-child { border-radius: 0 8px 8px 0; }
+
+#mode-tabs button.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* ── Melody lane ───────────────────────────────── */
+#melody-panel { display: none; }
+#melody-panel.active { display: block; }
+#melody-panel.active ~ #stats-bar,
+#melody-panel.active ~ #celebration,
+#melody-panel.active ~ #round-complete { display: none; }
+#scale-panel { display: none; }
+#scale-panel.active { display: block; }
+
+#melody-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+#melody-controls select, #melody-controls button {
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--header-border);
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+#melody-start-btn {
+  background: var(--accent) !important;
+  color: #fff !important;
+  border: none !important;
+  font-weight: 600;
+}
+
+#melody-start-btn.stop {
+  background: var(--surface) !important;
+  color: var(--fg-dim) !important;
+  border: 1px solid var(--header-border) !important;
+  font-weight: 500;
+}
+
+#melody-score-bar {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+#melody-score-bar span { color: var(--fg-dim); }
+#melody-score-bar strong { color: var(--fg); }
+
+#melody-lane-wrapper {
+  perspective: 250px;
+  overflow: hidden;
+  height: 300px;
+  margin: 0 auto;
+  margin-bottom: 0;
+}
+
+#melody-lane {
+  position: relative;
+  height: 100%;
+  transform-origin: bottom center;
+  transform: rotateX(42deg);
+  background:
+    repeating-linear-gradient(to bottom,
+      transparent 0px,
+      transparent 58px,
+      rgba(128,128,128,0.12) 58px,
+      rgba(128,128,128,0.12) 60px
+    ),
+    linear-gradient(to bottom,
+      transparent 0%,
+      rgba(128,128,128,0.04) 50%,
+      rgba(128,128,128,0.08) 100%
+    );
+  border-left: 1px solid var(--surface);
+  border-right: 1px solid var(--surface);
+}
+
+#melody-hit-zone {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(to bottom, transparent, var(--accent-dim));
+  border-top: 2px solid var(--accent);
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+#melody-hit-zone::after {
+  content: 'PLAY';
+  position: absolute;
+  right: 8px;
+  top: 6px;
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: var(--accent);
+  opacity: 0.6;
+  letter-spacing: 2px;
+}
+
+.melody-note {
+  position: absolute;
+  width: 42px;
+  height: 36px;
+  border-radius: 18px;
+  background: linear-gradient(to bottom,
+    rgba(255,255,255,0.3) 0%,
+    var(--accent) 40%,
+    var(--accent) 60%,
+    rgba(0,0,0,0.2) 100%
+  );
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  pointer-events: none;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-bottom: 3px solid rgba(0,0,0,0.35);
+  box-shadow:
+    0 4px 8px rgba(0,0,0,0.5),
+    inset 0 2px 2px rgba(255,255,255,0.3);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.melody-note.black-key {
+  width: 30px;
+  font-size: 0.7rem;
+  border-radius: 15px;
+}
+
+.melody-note.hit {
+  background: linear-gradient(to bottom,
+    rgba(255,255,255,0.4) 0%,
+    var(--green) 40%,
+    var(--green) 100%
+  ) !important;
+  box-shadow: 0 0 12px var(--green), inset 0 1px 1px rgba(255,255,255,0.4) !important;
+  opacity: 0 !important;
+  transition: opacity 0.3s, transform 0.2s;
+}
+
+.melody-note.missed {
+  background: linear-gradient(to bottom,
+    rgba(255,255,255,0.1) 0%,
+    var(--red) 40%,
+    var(--red) 100%
+  ) !important;
+  opacity: 0.15 !important;
+  box-shadow: none !important;
+  transition: opacity 0.5s;
+}
+
+#melody-result {
+  display: none;
+  text-align: center;
+  margin-top: 1rem;
+}
+
+#melody-result.show { display: block; }
+
+#melody-result h2 { font-size: 1.5rem; margin-bottom: 0.3rem; }
+#melody-result .rating { font-size: 2.5rem; font-weight: 800; color: var(--accent); }
+#melody-result .stats { font-size: 0.85rem; color: var(--fg-dim); margin-top: 0.5rem; }
+
 </style>
 <script src="scale-engine.js"></script>
 <script src="training-session.js"></script>
+<script src="melody-data.js"></script>
+<script src="melody-engine.js"></script>
 </head>
 <body>
 <script>window.onerror = function(msg, src, line) {
@@ -710,6 +914,11 @@ main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
       <p>Hit <strong>Start</strong> to begin a drill. Complete the scale or hit <strong>Stop</strong> to bail out.</p>
       <p>After each round, your results are logged in the <strong>Session Log</strong> at the bottom.</p>
     </div>
+    <h3>Melody Mode</h3>
+    <div class="help-text">
+      <p>Switch to <strong>Melody Mode</strong> using the tab at the top. Notes from famous melodies fall toward the keyboard — play them as they cross the hit zone.</p>
+      <p>Pick a melody and key, then hit <strong>Play</strong>. Score points for each hit, build streak multipliers, and earn a rating (S/A/B/C/D) at the end.</p>
+    </div>
     <h3>Tips</h3>
     <div class="help-text">
       <p>MIDI keyboards require Chrome or Edge. The on-screen keyboard works in any browser.</p>
@@ -720,6 +929,14 @@ main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
 </div>
 
 <main data-phase="FREE_PLAY">
+
+<div id="mode-tabs">
+  <button class="active" data-tab="scale">Scale Trainer</button>
+  <button data-tab="melody">Melody Mode</button>
+</div>
+
+<!-- Scale Trainer Panel -->
+<div id="scale-panel" class="active">
 
 <div id="scale-picker"></div>
 <div id="direction-picker"></div>
@@ -737,6 +954,45 @@ main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
 
 <div id="note-progress"></div>
 
+</div><!-- /scale-panel -->
+
+<!-- Melody Mode Panel -->
+<div id="melody-panel">
+
+<div id="melody-controls">
+  <select id="melody-select"></select>
+  <select id="melody-key-select"></select>
+  <select id="melody-speed-select">
+    <option value="0.5">Slow</option>
+    <option value="0.75">Medium</option>
+    <option value="1" selected>Normal</option>
+    <option value="1.5">Fast</option>
+  </select>
+  <button id="melody-start-btn">Play &#9654;</button>
+</div>
+
+<div id="melody-score-bar">
+  <div><span>Accuracy:</span> <strong id="melody-accuracy">&ndash;</strong></div>
+  <div><span>Streak:</span> <strong id="melody-streak">0</strong></div>
+  <div><span>Score:</span> <strong id="melody-score">0</strong></div>
+  <div><span>Mult:</span> <strong id="melody-multiplier">1x</strong></div>
+</div>
+
+<div id="melody-lane-wrapper">
+  <div id="melody-lane">
+    <div id="melody-hit-zone"></div>
+  </div>
+</div>
+
+<div id="melody-result">
+  <div class="rating" id="melody-rating"></div>
+  <h2 id="melody-result-title"></h2>
+  <div class="stats" id="melody-result-stats"></div>
+</div>
+
+</div><!-- /melody-panel -->
+
+<!-- Shared: piano keyboard -->
 <div id="piano-container">
   <div id="piano"></div>
 </div>
@@ -757,7 +1013,7 @@ main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
   <summary>Session Log (0 rounds)</summary>
   <table id="journal-table">
     <thead><tr>
-      <th>#</th><th>Scale</th><th>Dir</th><th>Mode</th><th>Acc</th><th>Clean</th><th>Time</th>
+      <th>#</th><th>What</th><th>Key</th><th>Acc</th><th>Result</th><th>Score</th>
     </tr></thead>
     <tbody></tbody>
   </table>
@@ -1073,6 +1329,25 @@ function handleNote(midi) {
   playTone(midi);
   pressKey(midi);
 
+  // Route to melody engine if melody mode is active
+  if (activeGameMode === 'melody' && melodyState.phase === 'PLAYING') {
+    const prevHits = melodyState.score.hits;
+    melodyState = MelodyEngine.transition(melodyState, MelodyEngine.actions.playNote(midi, Date.now()));
+    if (melodyState.score.hits > prevHits) {
+      flashKey(midi, 'flash-green');
+      midiLog(`<span class="match">MELODY HIT</span>`);
+    }
+    updateMelodyScoreDisplay();
+    if (melodyState.phase === 'COMPLETE') {
+      renderMelodyResult();
+      renderJournal();
+      stopMelodyLoop();
+      melodyStartBtn.textContent = 'Play \u25B6';
+      melodyStartBtn.classList.remove('stop');
+    }
+    return;
+  }
+
   if (state.phase !== 'TRAINING') {
     midiLog(`<span class="skip">free play</span>`);
     return;
@@ -1251,14 +1526,23 @@ function renderRoundComplete() {
 }
 
 function renderJournal() {
-  const j = state.journal;
-  journalEl.querySelector('summary').textContent = `Session Log (${j.length} round${j.length !== 1 ? 's' : ''})`;
+  // Merge both journals, re-number sequentially
+  const scaleEntries = state.journal.map(e => ({ ...e, type: 'scale' }));
+  const melodyEntries = melodyState.journal.map(e => ({ ...e, type: 'melody' }));
+  const all = [...scaleEntries, ...melodyEntries];
+  const total = all.length;
+
+  journalEl.querySelector('summary').textContent = `Session Log (${total} round${total !== 1 ? 's' : ''})`;
   journalBody.innerHTML = '';
-  j.forEach(entry => {
+  all.forEach((entry, i) => {
     const tr = document.createElement('tr');
-    const secs = (entry.durationMs / 1000).toFixed(1);
-    const dirShort = entry.direction === 'ascending' ? '\u2191' : entry.direction === 'descending' ? '\u2193' : '\u2195';
-    tr.innerHTML = `<td>${entry.id}</td><td>${entry.root}</td><td>${dirShort}</td><td>${entry.mode === 'guided' ? 'G' : entry.mode === 'shadowed' ? 'S' : 'B'}</td><td>${entry.accuracy}%</td><td class="${entry.clean ? 'clean-yes' : 'clean-no'}">${entry.clean ? '\u2713' : '\u2717'}</td><td>${secs}s</td>`;
+    if (entry.type === 'scale') {
+      const secs = (entry.durationMs / 1000).toFixed(1);
+      const dirShort = entry.direction === 'ascending' ? '\u2191' : entry.direction === 'descending' ? '\u2193' : '\u2195';
+      tr.innerHTML = `<td>${i + 1}</td><td>${entry.root} ${dirShort}</td><td>${entry.mode === 'guided' ? 'G' : entry.mode === 'shadowed' ? 'S' : 'B'}</td><td>${entry.accuracy}%</td><td class="${entry.clean ? 'clean-yes' : 'clean-no'}">${entry.clean ? '\u2713' : '\u2717'}</td><td>${secs}s</td>`;
+    } else {
+      tr.innerHTML = `<td>${i + 1}</td><td>\u266B ${entry.melodyName}</td><td>${entry.key}</td><td>${entry.accuracy}%</td><td>${entry.rating}</td><td>${entry.total}pts</td>`;
+    }
     journalBody.appendChild(tr);
   });
 }
@@ -1453,9 +1737,238 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// ── Cleanup on page unload ────────────────────────────────────
+window.addEventListener('beforeunload', () => {
+  stopMelodyLoop();
+});
+
 // ── Service Worker ────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('service-worker.js').catch(() => {});
+}
+
+// ── Mode tabs ─────────────────────────────────────────────────
+let activeGameMode = 'scale'; // 'scale' | 'melody'
+const scalePanelEl = document.getElementById('scale-panel');
+const melodyPanelEl = document.getElementById('melody-panel');
+const melodySelectEl = document.getElementById('melody-select');
+const melodyKeySelectEl = document.getElementById('melody-key-select');
+const melodyStartBtn = document.getElementById('melody-start-btn');
+const melodyLaneEl = document.getElementById('melody-lane');
+const melodyAccuracyEl = document.getElementById('melody-accuracy');
+const melodyScoreEl = document.getElementById('melody-score');
+const melodyStreakEl = document.getElementById('melody-streak');
+const melodyMultiplierEl = document.getElementById('melody-multiplier');
+const melodyResultEl = document.getElementById('melody-result');
+const melodyRatingEl = document.getElementById('melody-rating');
+const melodyResultTitleEl = document.getElementById('melody-result-title');
+const melodyResultStatsEl = document.getElementById('melody-result-stats');
+
+document.getElementById('mode-tabs').addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  const tab = btn.dataset.tab;
+  if (tab === activeGameMode) return;
+
+  // Stop any active sessions
+  if (state.phase === 'TRAINING') {
+    state = TrainingSession.transition(state, TrainingSession.actions.stopRound());
+    render();
+  }
+  if (melodyState.phase === 'PLAYING') {
+    melodyState = MelodyEngine.transition(melodyState, MelodyEngine.actions.stop());
+    stopMelodyLoop();
+  }
+
+  activeGameMode = tab;
+  document.querySelectorAll('#mode-tabs button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  scalePanelEl.classList.toggle('active', tab === 'scale');
+  melodyPanelEl.classList.toggle('active', tab === 'melody');
+  melodyResultEl.classList.remove('show');
+});
+
+// ── Melody Mode ───────────────────────────────────────────────
+let melodyState = MelodyEngine.createMelodySession();
+let melodyAnimId = null;
+let melodyLastFrame = null;
+
+// Populate melody selector
+MelodyData.MELODIES.forEach(m => {
+  const opt = document.createElement('option');
+  opt.value = m.id;
+  opt.textContent = m.name + ' (' + ['','Easy','Med'][m.difficulty] + ')';
+  melodySelectEl.appendChild(opt);
+});
+
+// Populate key selector
+ScaleEngine.ROOTS.forEach(r => {
+  const opt = document.createElement('option');
+  opt.value = r;
+  opt.textContent = r + ' major';
+  melodyKeySelectEl.appendChild(opt);
+});
+
+melodyStartBtn.addEventListener('click', () => {
+  if (melodyState.phase === 'PLAYING') {
+    melodyState = MelodyEngine.transition(melodyState, MelodyEngine.actions.stop());
+    stopMelodyLoop();
+    melodyStartBtn.textContent = 'Play \u25B6';
+    melodyStartBtn.classList.remove('stop');
+    return;
+  }
+
+  const melodyId = melodySelectEl.value;
+  const key = melodyKeySelectEl.value;
+  if (!melodyId) return;
+
+  melodyResultEl.classList.remove('show');
+  clearMelodyLane();
+
+  // Match lane width to piano for alignment
+  const wrapper = document.getElementById('melody-lane-wrapper');
+  wrapper.style.width = pianoEl.style.width;
+  melodyLaneEl.style.width = '100%';
+
+  melodyState = MelodyEngine.transition(
+    melodyState,
+    MelodyEngine.actions.startMelody(melodyId, key, 'scale', parseFloat(document.getElementById('melody-speed-select').value), 300, Date.now(), 4)
+  );
+
+  melodyStartBtn.textContent = 'Stop \u25A0';
+  melodyStartBtn.classList.add('stop');
+  melodyScoreEl.textContent = '0';
+  melodyStreakEl.textContent = '0';
+  melodyMultiplierEl.textContent = '1x';
+  startMelodyLoop();
+});
+
+// ── Melody game loop ──────────────────────────────────────────
+function startMelodyLoop() {
+  melodyLastFrame = null;
+  melodyAnimId = requestAnimationFrame(melodyGameLoop);
+}
+
+function stopMelodyLoop() {
+  if (melodyAnimId) { cancelAnimationFrame(melodyAnimId); melodyAnimId = null; }
+  melodyLastFrame = null;
+}
+
+function melodyGameLoop(timestamp) {
+  try {
+    if (melodyState.phase !== 'PLAYING') { stopMelodyLoop(); return; }
+
+    if (!melodyLastFrame) melodyLastFrame = timestamp;
+    const dt = timestamp - melodyLastFrame;
+    melodyLastFrame = timestamp;
+
+    melodyState = MelodyEngine.transition(melodyState, MelodyEngine.actions.tick(dt));
+
+    if (melodyState.phase === 'COMPLETE') {
+      renderMelodyResult();
+      renderJournal();
+      stopMelodyLoop();
+      melodyStartBtn.textContent = 'Play \u25B6';
+      melodyStartBtn.classList.remove('stop');
+      return;
+    }
+
+    renderMelodyLane();
+    updateMelodyScoreDisplay();
+    melodyAnimId = requestAnimationFrame(melodyGameLoop);
+  } catch (e) {
+    // Page unloading or globals destroyed — stop silently
+    stopMelodyLoop();
+  }
+}
+
+// ── Melody rendering ──────────────────────────────────────────
+const LANE_HEIGHT = 300;
+const MS_PER_PIXEL = 3; // higher = slower fall
+
+function clearMelodyLane() {
+  const notes = melodyLaneEl.querySelectorAll('.melody-note');
+  notes.forEach(n => n.remove());
+}
+
+function renderMelodyLane() {
+  if (!melodyState.melody) return;
+
+  const scroll = melodyState.scrollPositionMs;
+
+  // Scroll fret lines — this creates the "driving forward" illusion
+  const fretOffset = (scroll / MS_PER_PIXEL) % 60;
+  melodyLaneEl.style.backgroundPositionY = fretOffset + 'px';
+  const notes = melodyState.melody.notes;
+  const states = melodyState.noteStates;
+  const existing = new Map();
+
+  // Index existing DOM notes
+  melodyLaneEl.querySelectorAll('.melody-note').forEach(el => {
+    existing.set(parseInt(el.dataset.idx), el);
+  });
+
+  for (let i = 0; i < notes.length; i++) {
+    const note = notes[i];
+    const ns = states[i];
+
+    // Y position: 0 = top of lane, LANE_HEIGHT = hit zone
+    const y = LANE_HEIGHT - (note.beatTimeMs - scroll) / MS_PER_PIXEL;
+
+    // Only render if on screen (with buffer)
+    if (y < -50 || y > LANE_HEIGHT + 50) {
+      const el = existing.get(i);
+      if (el) el.remove();
+      continue;
+    }
+
+    let el = existing.get(i);
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'melody-note';
+      el.dataset.idx = i;
+      el.textContent = note.label;
+
+      // Position horizontally over the target piano key
+      const keyEl = keyElements[note.midi];
+      if (keyEl) {
+        const keyLeft = parseInt(keyEl.style.left);
+        const isBlack = keyEl.classList.contains('black');
+        el.style.left = (keyLeft + (isBlack ? 1 : 3)) + 'px';
+        if (isBlack) el.classList.add('black-key');
+      }
+
+      melodyLaneEl.appendChild(el);
+    }
+
+    el.style.transform = `translateY(${y}px)`;
+
+    // Status styling
+    if (ns.status === 'hit' && !el.classList.contains('hit')) {
+      el.classList.add('hit');
+    } else if (ns.status === 'missed' && !el.classList.contains('missed')) {
+      el.classList.add('missed');
+    }
+  }
+}
+
+function updateMelodyScoreDisplay() {
+  const s = melodyState.score;
+  const total = s.hits + s.misses;
+  melodyAccuracyEl.textContent = total > 0 ? Math.round((s.hits / total) * 100) + '%' : '\u2013';
+  melodyScoreEl.textContent = s.total;
+  melodyStreakEl.textContent = s.streak;
+  melodyMultiplierEl.textContent = melodyState.score.multiplier + 'x';
+}
+
+function renderMelodyResult() {
+  if (!melodyState.result) return;
+  const r = melodyState.result;
+  melodyRatingEl.textContent = 'Rating: ' + r.rating;
+  melodyResultTitleEl.textContent = r.melodyName;
+  melodyResultStatsEl.textContent = `${r.accuracy}% accuracy \u00b7 ${r.hits}/${r.hits + r.misses} notes \u00b7 best streak: ${r.maxStreak}`;
+  melodyResultEl.classList.add('show');
+  clearMelodyLane();
 }
 
 // ── Init ──────────────────────────────────────────────────────
