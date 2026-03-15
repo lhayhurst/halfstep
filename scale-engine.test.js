@@ -599,6 +599,7 @@ describe('all modules load in shared browser global scope', () => {
       'training-session.js',
       'melody-data.js',
       'melody-engine.js',
+      'circle-walk.js',
     ];
 
     // Concatenate all scripts (stripping module.exports) to simulate browser loading
@@ -619,6 +620,7 @@ describe('all modules load in shared browser global scope', () => {
         TrainingSession: typeof TrainingSession !== 'undefined',
         MelodyData: typeof MelodyData !== 'undefined',
         MelodyEngine: typeof MelodyEngine !== 'undefined',
+        CircleWalk: typeof CircleWalk !== 'undefined',
       };
     `;
 
@@ -634,6 +636,7 @@ describe('all modules load in shared browser global scope', () => {
     assert.ok(context._result.TrainingSession, 'TrainingSession should be defined');
     assert.ok(context._result.MelodyData, 'MelodyData should be defined');
     assert.ok(context._result.MelodyEngine, 'MelodyEngine should be defined');
+    assert.ok(context._result.CircleWalk, 'CircleWalk should be defined');
   });
 
   it('modules can call each other after loading', () => {
@@ -641,7 +644,7 @@ describe('all modules load in shared browser global scope', () => {
     const fs = require('node:fs');
     const path = require('node:path');
 
-    const files = ['scale-engine.js', 'training-session.js', 'melody-data.js', 'melody-engine.js'];
+    const files = ['scale-engine.js', 'training-session.js', 'melody-data.js', 'melody-engine.js', 'circle-walk.js'];
     let combined = '';
     for (const file of files) {
       const code = fs.readFileSync(path.join(__dirname, file), 'utf-8');

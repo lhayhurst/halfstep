@@ -47,11 +47,13 @@
 - [ ] Free chord play: show chord name for whatever the user plays
 
 ## Circle of Fifths Mode
-- [ ] Visual circle of fifths diagram
-- [ ] Navigate around the circle: play each key's scale in order
+- [x] Visual SVG circle of fifths diagram with animated current position
+- [x] Walk the circle: play each key's scale in order (C→G→D→...→Db)
+- [x] Clean completion advances, dirty retries the same key
+- [x] Progress persists to localStorage (resume after reload)
+- [x] Walk completion celebration with retry stats
 - [ ] Show relative minors
-- [ ] Drill: random jumps around the circle, user plays the requested scale
-- [ ] Highlight current position on the circle as user progresses
+- [ ] Drill: random jumps around the circle
 
 ## Nice to Have
 - [ ] Larger keyboard option (3–4 octaves) for MIDI users

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'halfstep-v20';
+const CACHE_NAME = 'halfstep-v21';
 
 const SAMPLE_NAMES = [
   'C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'
@@ -19,6 +19,7 @@ const ASSETS = [
   './training-session.js',
   './melody-data.js',
   './melody-engine.js',
+  './circle-walk.js',
   './manifest.json',
   './service-worker.js',
   ...SAMPLES
