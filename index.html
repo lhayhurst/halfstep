@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<title>halfstep</title>
+<link rel="manifest" href="manifest.json">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Theme: Dark (default) ──────────────────────── */
+:root, [data-theme="dark"] {
+  --bg: #18181b;
+  --bg2: #1e1e22;
+  --fg: #e4e4e7;
+  --fg-dim: #71717a;
+  --accent: #f59e0b;
+  --accent-dim: rgba(245,158,11,0.15);
+  --green: #22c55e;
+  --red: #ef4444;
+  --key-white: #e4e4e7;
+  --key-black: #27272a;
+  --key-border: #3f3f46;
+  --surface: #27272a;
+  --surface2: #2e2e33;
+  --header-bg: #111114;
+  --header-border: #2e2e33;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+  color-scheme: dark;
+}
+
+/* ── Theme: Clean ──────────────────────────────── */
+[data-theme="clean"] {
+  --bg: #ffffff;
+  --bg2: #f9fafb;
+  --fg: #374151;
+  --fg-dim: #9ca3af;
+  --accent: #6366f1;
+  --accent-dim: rgba(99,102,241,0.12);
+  --green: #22c55e;
+  --red: #ef4444;
+  --key-white: #ffffff;
+  --key-black: #1f2937;
+  --key-border: #d1d5db;
+  --surface: #f3f4f6;
+  --surface2: #e5e7eb;
+  --header-bg: #f9fafb;
+  --header-border: #e5e7eb;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  color-scheme: light;
+}
+
+/* ── Theme: Warm ───────────────────────────────── */
+[data-theme="warm"] {
+  --bg: #faf8f5;
+  --bg2: #f5f0eb;
+  --fg: #44403c;
+  --fg-dim: #a8a29e;
+  --accent: #c2410c;
+  --accent-dim: rgba(194,65,12,0.1);
+  --green: #16a34a;
+  --red: #dc2626;
+  --key-white: #faf8f5;
+  --key-black: #292524;
+  --key-border: #d6d3d1;
+  --surface: #f5f0eb;
+  --surface2: #e7e0d8;
+  --header-bg: #f5f0eb;
+  --header-border: #e7e0d8;
+  --shadow: 0 1px 3px rgba(120,80,40,0.1);
+  color-scheme: light;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── Header bar ─────────────────────────────────── */
+header {
+  width: 100%;
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--header-border);
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+h1 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+#midi-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#midi-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--fg-dim);
+  flex-shrink: 0;
+}
+
+#midi-dot.connected { background: var(--green); }
+#midi-dot.error { background: var(--red); }
+
+#midi-select {
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--header-border);
+  padding: 0.3rem 0.5rem;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  max-width: 220px;
+}
+
+#midi-select:focus { border-color: var(--accent); outline: none; }
+
+/* ── Scale picker ───────────────────────────────── */
+#scale-picker,
+#direction-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: center;
+  margin-bottom: 0.6rem;
+}
+
+#scale-picker button,
+#direction-picker button {
+  background: var(--surface);
+  color: var(--fg-dim);
+  border: 1px solid transparent;
+  padding: 0.3rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+#scale-picker button:hover,
+#direction-picker button:hover {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
+#scale-picker button.active,
+#direction-picker button.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* ── Main content ───────────────────────────────── */
+main {
+  width: 100%;
+  max-width: 740px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#prompt-area {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+#scale-prompt {
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+#theory-tip {
+  font-size: 0.8rem;
+  color: var(--fg-dim);
+  font-style: italic;
+  min-height: 1.2em;
+}
+
+#feedback-area {
+  text-align: center;
+  min-height: 2rem;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+#note-progress {
+  display: flex;
+  gap: 0.3rem;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+#note-progress .dot {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--fg-dim);
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+#note-progress .dot.active {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+#note-progress .dot.hit {
+  background: var(--green);
+  color: #fff;
+  transform: scale(1.1);
+}
+
+#note-progress .dot.missed {
+  background: var(--red);
+  color: #fff;
+}
+
+/* Piano */
+#piano-container {
+  width: 100%;
+  max-width: 740px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+}
+
+#piano {
+  position: relative;
+  height: 180px;
+  min-width: 630px;
+  margin: 0 auto;
+}
+
+.key {
+  position: absolute;
+  border-radius: 0 0 5px 5px;
+  cursor: pointer;
+  transition: background 0.08s;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 8px;
+  font-size: 0.6rem;
+  font-weight: 600;
+}
+
+.key.white {
+  width: 42px;
+  height: 180px;
+  background: var(--key-white);
+  border: 1px solid var(--key-border);
+  z-index: 1;
+  color: #666;
+}
+
+.key.black {
+  width: 26px;
+  height: 110px;
+  background: var(--key-black);
+  z-index: 2;
+  color: #999;
+  padding-bottom: 6px;
+  font-size: 0.5rem;
+  border: 1px solid #111;
+}
+
+.key.white:active, .key.white.pressing { background: #ddd; }
+.key.black:active, .key.black.pressing { background: #444; }
+
+.key.scale-highlight.white { background: var(--accent-dim); border-color: var(--accent); }
+.key.scale-highlight.black { background: rgba(67,97,238,0.6); }
+
+.key.root-mark::after {
+  content: '';
+  position: absolute;
+  bottom: 14px;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.key.black.root-mark::after { bottom: 10px; }
+
+.key.flash-green.white { background: var(--green) !important; }
+.key.flash-green.black { background: var(--green) !important; }
+.key.flash-red.white { background: var(--red) !important; }
+.key.flash-red.black { background: var(--red) !important; }
+
+.key .label { pointer-events: none; }
+
+/* Stats */
+#stats-bar {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+}
+
+#stats-bar span { color: var(--fg-dim); }
+#stats-bar strong { color: var(--fg); }
+
+#celebration {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--accent);
+  min-height: 1.5rem;
+  margin-bottom: 0.5rem;
+  transition: opacity 0.3s;
+}
+
+/* Round complete */
+#round-complete {
+  display: none;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+#round-complete.show { display: block; }
+
+#round-complete h2 {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+#wrong-summary {
+  font-size: 0.8rem;
+  color: var(--fg-dim);
+  margin-bottom: 0.5rem;
+}
+
+
+/* MIDI Monitor */
+#midi-monitor {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 90;
+}
+
+#monitor-toggle {
+  display: block;
+  width: 100%;
+  background: var(--header-bg);
+  color: var(--fg-dim);
+  border: none;
+  border-top: 1px solid var(--header-border);
+  padding: 0.3rem;
+  font-size: 0.7rem;
+  cursor: pointer;
+  text-align: center;
+}
+
+#monitor-toggle:hover { color: var(--fg); }
+
+#monitor-log {
+  display: none;
+  background: #000;
+  color: #0f0;
+  font: 0.7rem monospace;
+  padding: 0.4rem 0.6rem;
+  max-height: 120px;
+  overflow-y: auto;
+  border-top: 1px solid #333;
+}
+
+#monitor-log.open { display: block; }
+
+#monitor-log .entry {
+  white-space: nowrap;
+  padding: 1px 0;
+}
+
+#monitor-log .entry .note { color: #0ff; }
+#monitor-log .entry .ch { color: #888; }
+#monitor-log .entry .vel { color: #ff0; }
+#monitor-log .entry .match { color: #0f0; }
+#monitor-log .entry .miss { color: #f55; }
+#monitor-log .entry .skip { color: #888; }
+
+/* ── Settings panel ────────────────────────────── */
+#settings-btn, #help-btn {
+  background: none;
+  border: 1px solid var(--header-border);
+  color: var(--fg-dim);
+  width: 30px; height: 30px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+#help-btn { font-weight: 700; font-size: 0.85rem; }
+
+#settings-btn:hover, #help-btn:hover { color: var(--fg); border-color: var(--accent); }
+
+#settings-overlay, #help-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  justify-content: center;
+  align-items: center;
+}
+
+#settings-overlay.open, #help-overlay.open { display: flex; }
+
+#settings-card {
+  background: var(--bg);
+  border: 1px solid var(--header-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: var(--shadow);
+}
+
+#settings-card h2 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.settings-section {
+  margin-bottom: 1.2rem;
+}
+
+.settings-section:last-child { margin-bottom: 0; }
+
+.settings-section label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fg-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.4rem;
+}
+
+.settings-section .btn-group {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.settings-section .btn-group button {
+  background: var(--surface);
+  color: var(--fg-dim);
+  border: 1px solid transparent;
+  padding: 0.35rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.settings-section .btn-group button:hover {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
+.settings-section .btn-group button.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+#settings-close {
+  display: block;
+  margin-top: 1rem;
+  width: 100%;
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--header-border);
+  padding: 0.5rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+#settings-close:hover, #help-close:hover { border-color: var(--accent); }
+
+#help-close {
+  display: block;
+  margin-top: 1rem;
+  width: 100%;
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--header-border);
+  padding: 0.5rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+#help-overlay h3 {
+  font-size: 0.9rem;
+  margin: 1rem 0 0.4rem;
+}
+
+.help-text {
+  font-size: 0.8rem;
+  color: var(--fg-dim);
+  line-height: 1.5;
+}
+
+.help-text p { margin-bottom: 0.4rem; }
+.help-text p:last-child { margin-bottom: 0; }
+.help-text strong { color: var(--fg); }
+
+#help-overlay #settings-card {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+</style>
+<script src="scale-engine.js"></script>
+</head>
+<body>
+<script>window.onerror = function(msg, src, line) {
+  document.title = 'JS ERROR';
+  var d = document.createElement('div');
+  d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:white;padding:1em;z-index:9999;font:14px monospace';
+  d.textContent = msg + ' (' + src + ':' + line + ')';
+  document.body.appendChild(d);
+};</script>
+
+<header>
+  <h1>halfstep</h1>
+  <div id="midi-controls">
+    <span id="midi-dot"></span>
+    <select id="midi-select">
+      <option value="">Select MIDI device...</option>
+    </select>
+    <button id="settings-btn" title="Settings">&#9881;</button>
+    <button id="help-btn" title="Help">?</button>
+  </div>
+</header>
+
+<div id="settings-overlay">
+  <div id="settings-card">
+    <h2>Settings</h2>
+    <div class="settings-section">
+      <label>Difficulty</label>
+      <div class="btn-group" id="mode-group"></div>
+    </div>
+    <div class="settings-section">
+      <label>Theme</label>
+      <div class="btn-group" id="theme-group"></div>
+    </div>
+    <div class="settings-section">
+      <label>Scale Order</label>
+      <div class="btn-group" id="scale-order-group"></div>
+    </div>
+    <button id="settings-close">Done</button>
+  </div>
+</div>
+
+<div id="help-overlay">
+  <div id="settings-card">
+    <h2>How to Play</h2>
+    <div class="help-text">
+      <p><strong>Pick a scale</strong> from the top row, or leave it on Random. Choose a direction — ascending, descending, or both.</p>
+      <p><strong>Play the notes</strong> using your MIDI keyboard or click the on-screen keys. Any octave counts — just get the right note name.</p>
+      <p><strong>Correct notes</strong> flash green and advance. <strong>Wrong notes</strong> flash red and show you what was expected — play the right note to continue.</p>
+      <p><strong>Streak</strong> counts consecutive perfect rounds. One mistake resets it.</p>
+    </div>
+    <h3>Difficulty Modes</h3>
+    <div class="help-text">
+      <p><strong>Guided</strong> — all scale notes are highlighted on the keyboard with labels. Great for learning new keys.</p>
+      <p><strong>Shadow</strong> — only the root note is marked. You need to know the scale from memory.</p>
+      <p><strong>Blind</strong> — the keyboard is hidden entirely. Pure ear and muscle memory.</p>
+    </div>
+    <h3>Tips</h3>
+    <div class="help-text">
+      <p>Play freely between rounds — the piano works as a regular instrument. Chords work too!</p>
+      <p>Use the MIDI Monitor at the bottom to debug your MIDI connection.</p>
+    </div>
+    <button id="help-close">Got it</button>
+  </div>
+</div>
+
+<main>
+
+<div id="scale-picker"></div>
+<div id="direction-picker"></div>
+
+<div id="prompt-area">
+  <div id="scale-prompt">Play the C major scale</div>
+  <div id="theory-tip"></div>
+</div>
+
+<div id="feedback-area">
+  <span id="feedback-text"></span>
+</div>
+
+<div id="note-progress"></div>
+
+<div id="piano-container">
+  <div id="piano"></div>
+</div>
+
+<div id="stats-bar">
+  <div><span>Accuracy:</span> <strong id="accuracy">&ndash;</strong></div>
+  <div><span>Streak:</span> <strong id="streak">0</strong></div>
+</div>
+
+<div id="celebration"></div>
+
+<div id="round-complete">
+  <h2 id="round-msg"></h2>
+  <div id="wrong-summary"></div>
+</div>
+
+
+</main>
+
+<div id="midi-monitor">
+  <button id="monitor-toggle">MIDI Monitor</button>
+  <div id="monitor-log"></div>
+</div>
+
+<script>
+// ── Scale Engine loaded from scale-engine.js as ScaleEngine global ──
+// All constants (ROOTS, CIRCLE_OF_FIFTHS, etc.) and functions
+// (getScaleNotes, getScaleMidiNotes) accessed via ScaleEngine.*
+
+// ── State ─────────────────────────────────────────────────────
+let currentRoot = 'C';
+let currentScale = [];
+let currentMidiScale = [];
+let highlightScale = [];
+let highlightMidi = [];
+let expectedIndex = 0;
+let attempts = 0;
+let correctCount = 0;
+let streak = 0;
+let roundMistakes = [];
+let roundActive = true;
+let mode = 'guided';
+let pinnedRoot = 'random';
+let direction = 'ascending'; // ascending | descending | both
+let audioCtx = null;
+let midiAccess = null;
+
+// ── DOM refs ──────────────────────────────────────────────────
+const pianoEl = document.getElementById('piano');
+const scalePickerEl = document.getElementById('scale-picker');
+const dirPickerEl = document.getElementById('direction-picker');
+const promptEl = document.getElementById('scale-prompt');
+const tipEl = document.getElementById('theory-tip');
+const feedbackEl = document.getElementById('feedback-text');
+const progressEl = document.getElementById('note-progress');
+const accuracyEl = document.getElementById('accuracy');
+const streakEl = document.getElementById('streak');
+const celebrationEl = document.getElementById('celebration');
+const roundCompleteEl = document.getElementById('round-complete');
+const roundMsgEl = document.getElementById('round-msg');
+const wrongSumEl = document.getElementById('wrong-summary');
+const midiDot = document.getElementById('midi-dot');
+const midiSelect = document.getElementById('midi-select');
+const pianoContainer = document.getElementById('piano-container');
+const monitorToggle = document.getElementById('monitor-toggle');
+const monitorLog = document.getElementById('monitor-log');
+const settingsBtn = document.getElementById('settings-btn');
+const settingsOverlay = document.getElementById('settings-overlay');
+const settingsClose = document.getElementById('settings-close');
+const themeGroup = document.getElementById('theme-group');
+const scaleOrderGroup = document.getElementById('scale-order-group');
+const modeGroup = document.getElementById('mode-group');
+const helpBtn = document.getElementById('help-btn');
+const helpOverlay = document.getElementById('help-overlay');
+const helpClose = document.getElementById('help-close');
+
+// ── MIDI Monitor ──────────────────────────────────────────────
+monitorToggle.addEventListener('click', () => {
+  monitorLog.classList.toggle('open');
+});
+
+// ── Settings ──────────────────────────────────────────────────
+settingsBtn.addEventListener('click', () => settingsOverlay.classList.add('open'));
+settingsClose.addEventListener('click', () => settingsOverlay.classList.remove('open'));
+settingsOverlay.addEventListener('click', (e) => {
+  if (e.target === settingsOverlay) settingsOverlay.classList.remove('open');
+});
+
+// ── Help ──────────────────────────────────────────────────────
+helpBtn.addEventListener('click', () => helpOverlay.classList.add('open'));
+helpClose.addEventListener('click', () => helpOverlay.classList.remove('open'));
+helpOverlay.addEventListener('click', (e) => {
+  if (e.target === helpOverlay) helpOverlay.classList.remove('open');
+});
+
+// Difficulty mode
+const MODES = [
+  { label: 'Guided', value: 'guided' },
+  { label: 'Shadow', value: 'shadowed' },
+  { label: 'Blind', value: 'blind' },
+];
+
+mode = localStorage.getItem('halfstep-mode') || 'guided';
+
+MODES.forEach(m => {
+  const btn = document.createElement('button');
+  btn.textContent = m.label;
+  if (m.value === mode) btn.classList.add('active');
+  btn.addEventListener('click', () => {
+    mode = m.value;
+    localStorage.setItem('halfstep-mode', m.value);
+    modeGroup.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    updateKeyboard();
+  });
+  modeGroup.appendChild(btn);
+});
+
+// Theme
+const THEMES = [
+  { label: 'Dark', value: 'dark' },
+  { label: 'Clean', value: 'clean' },
+  { label: 'Warm', value: 'warm' },
+];
+
+let currentTheme = localStorage.getItem('halfstep-theme') || 'clean';
+document.documentElement.setAttribute('data-theme', currentTheme);
+
+THEMES.forEach(t => {
+  const btn = document.createElement('button');
+  btn.textContent = t.label;
+  if (t.value === currentTheme) btn.classList.add('active');
+  btn.addEventListener('click', () => {
+    currentTheme = t.value;
+    document.documentElement.setAttribute('data-theme', t.value);
+    localStorage.setItem('halfstep-theme', t.value);
+    themeGroup.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+  themeGroup.appendChild(btn);
+});
+
+// Scale order
+const SCALE_ORDERS = [
+  { label: 'Circle of 5ths', value: 'fifths' },
+  { label: 'Chromatic', value: 'chromatic' },
+];
+
+const CHROMATIC_ROOTS = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+
+let scaleOrder = localStorage.getItem('halfstep-scale-order') || 'fifths';
+
+SCALE_ORDERS.forEach(o => {
+  const btn = document.createElement('button');
+  btn.textContent = o.label;
+  if (o.value === scaleOrder) btn.classList.add('active');
+  btn.addEventListener('click', () => {
+    scaleOrder = o.value;
+    localStorage.setItem('halfstep-scale-order', o.value);
+    scaleOrderGroup.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    rebuildScalePicker();
+  });
+  scaleOrderGroup.appendChild(btn);
+});
+
+function midiLog(html) {
+  const entry = document.createElement('div');
+  entry.className = 'entry';
+  entry.innerHTML = html;
+  monitorLog.appendChild(entry);
+  // Keep last 50 entries
+  while (monitorLog.children.length > 50) monitorLog.removeChild(monitorLog.firstChild);
+  monitorLog.scrollTop = monitorLog.scrollHeight;
+}
+
+// ── Build on-screen keyboard ──────────────────────────────────
+const FIRST_MIDI = 48;
+const LAST_MIDI = 72;
+const WHITE_NOTES = [0,2,4,5,7,9,11];
+const keyElements = {};
+
+function isWhite(midi) {
+  return WHITE_NOTES.includes(midi % 12);
+}
+
+function buildPiano() {
+  pianoEl.innerHTML = '';
+  const WHITE_W = 42;
+  const WHITE_GAP = 1;
+
+  let totalWhites = 0;
+  for (let m = FIRST_MIDI; m <= LAST_MIDI; m++) {
+    if (isWhite(m)) totalWhites++;
+  }
+  pianoEl.style.width = (totalWhites * (WHITE_W + WHITE_GAP)) + 'px';
+
+  const whites = [];
+  const blacks = [];
+  let wx = 0;
+  for (let m = FIRST_MIDI; m <= LAST_MIDI; m++) {
+    if (isWhite(m)) {
+      whites.push({ midi: m, x: wx });
+      wx += WHITE_W + WHITE_GAP;
+    }
+  }
+
+  for (let i = 0; i < whites.length - 1; i++) {
+    const cur = whites[i].midi;
+    const next = whites[i + 1].midi;
+    if (next - cur === 2) {
+      blacks.push({ midi: cur + 1, x: whites[i].x + WHITE_W - 12 });
+    }
+  }
+
+  whites.forEach(w => {
+    const el = document.createElement('div');
+    el.className = 'key white';
+    el.style.left = w.x + 'px';
+    el.dataset.midi = w.midi;
+    const lbl = document.createElement('span');
+    lbl.className = 'label';
+    el.appendChild(lbl);
+    pianoEl.appendChild(el);
+    keyElements[w.midi] = el;
+    el.addEventListener('pointerdown', e => { e.preventDefault(); handleNote(w.midi); });
+  });
+
+  blacks.forEach(b => {
+    const el = document.createElement('div');
+    el.className = 'key black';
+    el.style.left = b.x + 'px';
+    el.dataset.midi = b.midi;
+    const lbl = document.createElement('span');
+    lbl.className = 'label';
+    el.appendChild(lbl);
+    pianoEl.appendChild(el);
+    keyElements[b.midi] = el;
+    el.addEventListener('pointerdown', e => { e.preventDefault(); handleNote(b.midi); });
+  });
+}
+
+// ── Scale picker ──────────────────────────────────────────────
+function getOrderedRoots() {
+  return scaleOrder === 'chromatic' ? CHROMATIC_ROOTS : ScaleEngine.ROOTS;
+}
+
+function buildScalePicker() {
+  scalePickerEl.innerHTML = '';
+  const allOptions = ['Random', ...getOrderedRoots()];
+  allOptions.forEach(label => {
+    const btn = document.createElement('button');
+    btn.textContent = label;
+    btn.dataset.root = label === 'Random' ? 'random' : label;
+    if (btn.dataset.root === pinnedRoot) btn.classList.add('active');
+    btn.addEventListener('click', () => {
+      pinnedRoot = btn.dataset.root;
+      scalePickerEl.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      startRound();
+    });
+    scalePickerEl.appendChild(btn);
+  });
+}
+
+function rebuildScalePicker() {
+  buildScalePicker();
+}
+
+// ── Direction picker ───────────────────────────────────────────
+function buildDirectionPicker() {
+  const options = [
+    { label: 'Ascending', value: 'ascending' },
+    { label: 'Descending', value: 'descending' },
+    { label: 'Up & Down', value: 'both' },
+  ];
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.textContent = opt.label;
+    btn.dataset.dir = opt.value;
+    if (opt.value === 'ascending') btn.classList.add('active');
+    btn.addEventListener('click', () => {
+      direction = opt.value;
+      dirPickerEl.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      startRound();
+    });
+    dirPickerEl.appendChild(btn);
+  });
+}
+
+// ── Build expected sequence based on direction ────────────────
+function buildExpectedSequence(scaleNotes, midiNotes) {
+  if (direction === 'ascending') {
+    return { names: [...scaleNotes], midi: [...midiNotes] };
+  }
+  if (direction === 'descending') {
+    return { names: [...scaleNotes].reverse(), midi: [...midiNotes].reverse() };
+  }
+  // both: up then down (skip the repeated top note)
+  const namesUp = [...scaleNotes];
+  const midiUp = [...midiNotes];
+  const namesDown = [...scaleNotes].reverse().slice(1);
+  const midiDown = [...midiNotes].reverse().slice(1);
+  return {
+    names: [...namesUp, ...namesDown],
+    midi: [...midiUp, ...midiDown],
+  };
+}
+
+// ── Pick next root ────────────────────────────────────────────
+function pickRoot() {
+  if (pinnedRoot !== 'random') return pinnedRoot;
+  const roots = getOrderedRoots();
+  let r;
+  do { r = roots[Math.floor(Math.random() * roots.length)]; } while (r === currentRoot && roots.length > 1);
+  return r;
+}
+
+// ── Start round ───────────────────────────────────────────────
+function startRound() {
+  currentRoot = pickRoot();
+  const rawScale = ScaleEngine.getScaleNotes(currentRoot);
+  let startOctave = 3;
+  const rootSemi = ScaleEngine.NAME_TO_SEMI[currentRoot];
+  const baseMidi = 12 * (startOctave + 1) + rootSemi;
+  if (baseMidi + 12 > LAST_MIDI) startOctave = 2;
+  const adjBase = 12 * (startOctave + 1) + rootSemi;
+  if (adjBase < FIRST_MIDI) startOctave = 3;
+
+  const rawMidi = ScaleEngine.getScaleMidiNotes(currentRoot, startOctave);
+  // Store ascending scale for keyboard highlights
+  highlightScale = rawScale;
+  highlightMidi = rawMidi;
+  // Build the expected sequence for this direction
+  const seq = buildExpectedSequence(rawScale, rawMidi);
+  currentScale = seq.names;
+  currentMidiScale = seq.midi;
+
+  expectedIndex = 0;
+  attempts = 0;
+  correctCount = 0;
+  roundMistakes = [];
+  roundActive = true;
+
+  const dirLabel = direction === 'both' ? '(up & down)' : direction === 'descending' ? '(descending)' : '';
+  promptEl.textContent = `Play the ${currentRoot} major scale ${dirLabel}`.trim();
+  tipEl.textContent = ScaleEngine.TIPS[currentRoot] || '';
+  feedbackEl.textContent = '';
+  celebrationEl.textContent = '';
+  accuracyEl.textContent = '\u2013';
+  roundCompleteEl.classList.remove('show');
+
+  updateProgressDots();
+  updateKeyboard();
+}
+
+// ── Progress dots ─────────────────────────────────────────────
+function updateProgressDots() {
+  progressEl.innerHTML = '';
+  currentScale.forEach((name, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'dot';
+    dot.textContent = name;
+    if (i === expectedIndex && roundActive) dot.classList.add('active');
+    progressEl.appendChild(dot);
+  });
+}
+
+function markDot(index, cls) {
+  const dots = progressEl.querySelectorAll('.dot');
+  if (dots[index]) {
+    dots[index].classList.add(cls);
+    dots[index].classList.remove('active');
+  }
+  if (cls === 'hit') {
+    const nextDot = dots[expectedIndex];
+    if (nextDot && roundActive) nextDot.classList.add('active');
+  }
+}
+
+// ── Update keyboard display ───────────────────────────────────
+function updateKeyboard() {
+  pianoContainer.style.display = mode === 'blind' ? 'none' : '';
+
+  Object.values(keyElements).forEach(el => {
+    el.classList.remove('scale-highlight', 'root-mark');
+    el.querySelector('.label').textContent = '';
+  });
+
+  if (mode === 'guided') {
+    highlightMidi.forEach((midi, i) => {
+      const el = keyElements[midi];
+      if (el) {
+        el.classList.add('scale-highlight');
+        el.querySelector('.label').textContent = highlightScale[i];
+      }
+    });
+  }
+
+  if (mode === 'guided' || mode === 'shadowed') {
+    highlightMidi.forEach((midi, i) => {
+      if (i === 0 || i === 7) {
+        const el = keyElements[midi];
+        if (el) el.classList.add('root-mark');
+      }
+    });
+  }
+}
+
+// ── Flash key ─────────────────────────────────────────────────
+function flashKey(midi, cls, duration = 300) {
+  const el = keyElements[midi];
+  if (!el) return;
+  el.classList.add(cls);
+  setTimeout(() => el.classList.remove(cls), duration);
+}
+
+function pressKey(midi) {
+  const el = keyElements[midi];
+  if (!el) return;
+  el.classList.add('pressing');
+  setTimeout(() => el.classList.remove('pressing'), 150);
+}
+
+// ── Piano samples ─────────────────────────────────────────────
+// Files use flat naming: C3, Db3, D3, Eb3, ... (no sharps)
+const SAMPLE_NAMES = [
+  'C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'
+];
+const sampleBuffers = {};  // midi -> AudioBuffer
+let samplesLoaded = false;
+
+function midiToSamplePath(midi) {
+  const note = SAMPLE_NAMES[midi % 12];
+  const octave = Math.floor(midi / 12) - 1;
+  return 'samples/' + note + octave + '.mp3';
+}
+
+async function loadSamples() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e) { return; }
+  }
+  const loads = [];
+  for (let m = FIRST_MIDI; m <= LAST_MIDI; m++) {
+    loads.push(
+      fetch(midiToSamplePath(m))
+        .then(r => r.arrayBuffer())
+        .then(buf => audioCtx.decodeAudioData(buf))
+        .then(decoded => { sampleBuffers[m] = decoded; })
+        .catch(() => {}) // graceful fallback — synth will be used
+    );
+  }
+  await Promise.all(loads);
+  samplesLoaded = true;
+}
+
+function playTone(midi) {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e) { return; }
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  if (sampleBuffers[midi]) {
+    const src = audioCtx.createBufferSource();
+    src.buffer = sampleBuffers[midi];
+    src.connect(audioCtx.destination);
+    src.start();
+    return;
+  }
+
+  // Fallback: simple sine tone if sample not loaded yet
+  const freq = 440 * Math.pow(2, (midi - 69) / 12);
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0.2, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(now);
+  osc.stop(now + 1);
+}
+
+// ── MIDI note name (for feedback) ─────────────────────────────
+const midiToName = ScaleEngine.midiToNoteName;
+
+// ── Handle note input ─────────────────────────────────────────
+function handleNote(midi) {
+  if (!roundActive) {
+    midiLog(`<span class="skip">ignored (round not active)</span>`);
+    playTone(midi);
+    pressKey(midi);
+    return;
+  }
+
+  playTone(midi);
+  pressKey(midi);
+
+  attempts++;
+  handleStrictNote(midi);
+}
+
+function handleStrictNote(midi) {
+  const expectedMidi = currentMidiScale[expectedIndex];
+  const playedPitchClass = midi % 12;
+  const expectedPitchClass = expectedMidi % 12;
+
+  midiLog(`  expect <span class="note">${currentScale[expectedIndex]}</span> (pc:${expectedPitchClass}) got pc:${playedPitchClass} \u2192 ${playedPitchClass === expectedPitchClass ? '<span class="match">MATCH</span>' : '<span class="miss">MISS</span>'}`);
+
+  if (playedPitchClass === expectedPitchClass) {
+    correctCount++;
+    flashKey(midi, 'flash-green');
+    // Also flash the on-screen key in the displayed octave
+    if (midi !== expectedMidi) flashKey(expectedMidi, 'flash-green');
+    markDot(expectedIndex, 'hit');
+    feedbackEl.innerHTML = `<span style="color:var(--green)">\u2713 ${currentScale[expectedIndex]}</span>`;
+    expectedIndex++;
+    if (expectedIndex >= currentScale.length) {
+      completeRound();
+    }
+  } else {
+    flashKey(midi, 'flash-red');
+    flashKey(expectedMidi, 'flash-green', 600);
+    const playedName = midiToName(midi);
+    feedbackEl.innerHTML = `<span style="color:var(--red)">\u2717 ${playedName}</span> \u2014 expected <strong>${currentScale[expectedIndex]}</strong>`;
+    roundMistakes.push({ played: playedName, expected: currentScale[expectedIndex] });
+  }
+}
+
+// ── Complete round ────────────────────────────────────────────
+function completeRound() {
+  roundActive = false;
+  const acc = Math.round((correctCount / attempts) * 100);
+  accuracyEl.textContent = acc + '%';
+
+  const clean = roundMistakes.length === 0;
+  if (clean) {
+    streak++;
+  } else {
+    streak = 0;
+  }
+  streakEl.textContent = streak;
+
+  if (streak === 3) celebrationEl.textContent = 'Nice! 3 in a row!';
+  else if (streak === 5) celebrationEl.textContent = 'On fire! 5 streak!';
+  else if (streak === 10) celebrationEl.textContent = 'Unstoppable! 10 streak!';
+  else celebrationEl.textContent = '';
+
+  roundMsgEl.textContent = clean ? 'Perfect!' : `${acc}% accuracy`;
+
+  if (roundMistakes.length > 0) {
+    wrongSumEl.innerHTML = '<strong>Mistakes:</strong> ' +
+      roundMistakes.map(m => `played ${m.played}, expected ${m.expected}`).join(' \u00b7 ');
+  } else {
+    wrongSumEl.textContent = '';
+  }
+
+  roundCompleteEl.classList.add('show');
+  playScaleBack();
+}
+
+
+// ── Web Audio playback ────────────────────────────────────────
+function playScaleBack() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e) { return; }
+  }
+
+  const now = audioCtx.currentTime;
+  currentMidiScale.forEach((midi, i) => {
+    if (sampleBuffers[midi]) {
+      const src = audioCtx.createBufferSource();
+      src.buffer = sampleBuffers[midi];
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0.8, now + i * 0.25);
+      g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.25 + 0.6);
+      src.connect(g);
+      g.connect(audioCtx.destination);
+      src.start(now + i * 0.25);
+    } else {
+      const freq = 440 * Math.pow(2, (midi - 69) / 12);
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.15, now + i * 0.25);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.25 + 0.35);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now + i * 0.25);
+      osc.stop(now + i * 0.25 + 0.4);
+    }
+  });
+}
+
+// ── MIDI ──────────────────────────────────────────────────────
+let activeMidiInput = null;
+
+function setMidiDot(state) {
+  midiDot.classList.remove('connected', 'error');
+  if (state) midiDot.classList.add(state);
+}
+
+function populateMidiPorts() {
+  if (!midiAccess) return;
+  const prev = midiSelect.value;
+  // Keep the placeholder, clear the rest
+  while (midiSelect.options.length > 1) midiSelect.remove(1);
+
+  midiAccess.inputs.forEach((port, id) => {
+    if (port.state !== 'connected') return;
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = port.name + (port.manufacturer ? ' (' + port.manufacturer + ')' : '');
+    midiSelect.appendChild(opt);
+  });
+
+  // Re-select previous if still present
+  if (prev && [...midiSelect.options].some(o => o.value === prev)) {
+    midiSelect.value = prev;
+  }
+}
+
+function listenToInput(portId) {
+  if (!midiAccess) return;
+  // Detach previous
+  if (activeMidiInput) activeMidiInput.onmidimessage = null;
+  activeMidiInput = null;
+
+  if (!portId) {
+    setMidiDot(null);
+    return;
+  }
+
+  const port = midiAccess.inputs.get(portId);
+  if (!port || port.state !== 'connected') {
+    setMidiDot('error');
+    return;
+  }
+
+  activeMidiInput = port;
+  port.onmidimessage = (msg) => {
+    const d = msg.data;
+    if (!d || d.length < 3) return;
+    const status = d[0] & 0xF0;
+    const ch = (d[0] & 0x0F) + 1;
+    const note = d[1];
+    const vel = d[2];
+    const name = ScaleEngine.midiToNoteName(note);
+
+    if (status === 0x90 && vel > 0) {
+      midiLog(`<span class="ch">ch${ch}</span> NoteOn <span class="note">${name}</span> (${note}) <span class="vel">vel:${vel}</span>`);
+      handleNote(note);
+    } else if (status === 0x80 || (status === 0x90 && vel === 0)) {
+      midiLog(`<span class="ch">ch${ch}</span> NoteOff <span class="note">${name}</span> (${note})`);
+    } else {
+      midiLog(`<span class="ch">ch${ch}</span> status:0x${d[0].toString(16)} d1:${d[1]} d2:${d[2]}`);
+    }
+  };
+  setMidiDot('connected');
+}
+
+midiSelect.addEventListener('change', () => {
+  listenToInput(midiSelect.value);
+});
+
+async function initMIDI() {
+  if (!navigator.requestMIDIAccess) {
+    midiSelect.options[0].textContent = 'MIDI not supported';
+    midiSelect.disabled = true;
+    return;
+  }
+
+  midiSelect.options[0].textContent = 'Requesting MIDI access\u2026';
+
+  let timer;
+  const timeout = new Promise((_, rej) => {
+    timer = setTimeout(() => rej(new Error('timeout')), 4000);
+  });
+
+  try {
+    midiAccess = await Promise.race([navigator.requestMIDIAccess(), timeout]);
+    clearTimeout(timer);
+    midiSelect.options[0].textContent = 'Select MIDI device\u2026';
+
+    populateMidiPorts();
+
+    // Hot-plug support
+    midiAccess.onstatechange = () => {
+      setTimeout(() => {
+        populateMidiPorts();
+        // If active port disconnected, clear it
+        if (activeMidiInput && activeMidiInput.state !== 'connected') {
+          activeMidiInput = null;
+          midiSelect.value = '';
+          setMidiDot(null);
+        }
+      }, 0);
+    };
+  } catch (e) {
+    clearTimeout(timer);
+    midiSelect.options[0].textContent = e.message === 'timeout'
+      ? 'MIDI timed out \u2014 reload to retry'
+      : 'MIDI denied \u2014 check permissions';
+    setMidiDot('error');
+  }
+}
+
+
+// ── Service Worker ────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js').catch(() => {});
+}
+
+// ── Init ──────────────────────────────────────────────────────
+buildPiano();
+buildScalePicker();
+buildDirectionPicker();
+startRound();
+loadSamples();
+initMIDI();
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "halfstep",
+  "short_name": "halfstep",
+  "description": "Keyboard drill tool for learning major scales",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='64' fill='%231a1a2e'/><g transform='translate(56,160)'><rect x='0' y='0' width='50' height='180' rx='4' fill='white' stroke='%23333' stroke-width='1'/><rect x='57' y='0' width='50' height='180' rx='4' fill='white' stroke='%23333' stroke-width='1'/><rect x='114' y='0' width='50' height='180' rx='4' fill='white' stroke='%23333' stroke-width='1'/><rect x='171' y='0' width='50' height='180' rx='4' fill='white' stroke='%23333' stroke-width='1'/><rect x='228' y='0' width='50' height='180' rx='4' fill='white' stroke='%23333' stroke-width='1'/><rect x='285' y='0' width='50' height='180' rx='4' fill='white' stroke='%23333' stroke-width='1'/><rect x='342' y='0' width='50' height='180' rx='4' fill='white' stroke='%23333' stroke-width='1'/><rect x='36' y='0' width='30' height='110' rx='3' fill='%231a1a2e'/><rect x='93' y='0' width='30' height='110' rx='3' fill='%231a1a2e'/><rect x='207' y='0' width='30' height='110' rx='3' fill='%231a1a2e'/><rect x='264' y='0' width='30' height='110' rx='3' fill='%231a1a2e'/><rect x='321' y='0' width='30' height='110' rx='3' fill='%231a1a2e'/><circle cx='25' cy='150' r='8' fill='%234361ee'/></g></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

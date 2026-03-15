@@ -1,0 +1,20 @@
+stages:
+  - test
+  - deploy
+
+test:
+  stage: test
+  image: node:20-alpine
+  script:
+    - make test
+
+pages:
+  stage: deploy
+  script:
+    - mkdir -p public
+    - cp index.html scale-engine.js manifest.json service-worker.js public/
+  artifacts:
+    paths:
+      - public
+  only:
+    - main
