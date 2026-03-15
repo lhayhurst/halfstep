@@ -305,3 +305,147 @@ describe('serializeWalk / deserializeWalk', () => {
     assert.equal(w.completed.length, 12);
   });
 });
+
+// ── Quiz mode ─────────────────────────────────────────────────
+
+describe('quiz initial state', () => {
+  it('createWalk has quizPhase IDLE', () => {
+    assert.equal(CW.createWalk().quizPhase, 'IDLE');
+  });
+
+  it('C (index 0) is always revealed', () => {
+    const w = CW.createWalk();
+    assert.equal(w.quizRevealed[0], true);
+    assert.equal(w.quizRevealed[1], false);
+  });
+
+  it('quizCurrent starts at 1', () => {
+    assert.equal(CW.createWalk().quizCurrent, 1);
+  });
+});
+
+describe('startQuiz', () => {
+  it('transitions to quizPhase QUIZZING', () => {
+    let w = CW.createWalk();
+    w = CW.transition(w, CW.actions.startQuiz());
+    assert.equal(w.quizPhase, 'QUIZZING');
+  });
+
+  it('starts at index 0 (user must play C first)', () => {
+    let w = CW.createWalk();
+    w = CW.transition(w, CW.actions.startQuiz());
+    assert.equal(w.quizCurrent, 0);
+    assert.equal(w.quizRevealed[0], true); // C shown on circle
+  });
+
+  it('is a no-op when already quizzing', () => {
+    let w = CW.createWalk();
+    w = CW.transition(w, CW.actions.startQuiz());
+    w.quizCurrent = 5; // simulate progress
+    const w2 = CW.transition(w, CW.actions.startQuiz());
+    assert.equal(w2.quizCurrent, 5); // unchanged
+  });
+});
+
+describe('guessKey', () => {
+  it('playing C first advances to index 1', () => {
+    let w = CW.createWalk();
+    w = CW.transition(w, CW.actions.startQuiz());
+    assert.equal(w.quizCurrent, 0);
+    w = CW.transition(w, CW.actions.guessKey('C'));
+    assert.equal(w.quizRevealed[0], true);
+    assert.equal(w.quizCurrent, 1);
+  });
+
+  it('correct guess reveals node and advances', () => {
+    let w = CW.createWalk();
+    w = CW.transition(w, CW.actions.startQuiz());
+    w = CW.transition(w, CW.actions.guessKey('C')); // play C first
+    w = CW.transition(w, CW.actions.guessKey('G')); // then G
+    assert.equal(w.quizRevealed[1], true);
+    assert.equal(w.quizCurrent, 2);
+  });
+
+  it('wrong guess increments mistakes, stays on same index', () => {
+    let w = CW.createWalk();
+    w = CW.transition(w, CW.actions.startQuiz());
+    w = CW.transition(w, CW.actions.guessKey('C'));
+    w = CW.transition(w, CW.actions.guessKey('F')); // wrong
+    assert.equal(w.quizRevealed[1], false);
+    assert.equal(w.quizCurrent, 1);
+    assert.equal(w.quizMistakes, 1);
+  });
+
+  it('all 12 correct guesses complete the quiz', () => {
+    let w = CW.createWalk();
+    w = CW.transition(w, CW.actions.startQuiz());
+    const expected = ['C','G','D','A','E','B','F#','F','Bb','Eb','Ab','Db'];
+    expected.forEach(key => {
+      w = CW.transition(w, CW.actions.guessKey(key));
+    });
+    assert.equal(w.quizPhase, 'QUIZ_COMPLETE');
+    assert.ok(w.quizRevealed.every(r => r === true));
+  });
+
+  it('guessKey is a no-op when not quizzing', () => {
+    let w = CW.createWalk();
+    const w2 = CW.transition(w, CW.actions.guessKey('G'));
+    assert.equal(w2.quizPhase, 'IDLE');
+    assert.equal(w2.quizRevealed[1], false);
+  });
+});
+
+describe('resetQuiz', () => {
+  it('clears quiz progress', () => {
+    let w = CW.createWalk();
+    w = CW.transition(w, CW.actions.startQuiz());
+    w = CW.transition(w, CW.actions.guessKey('G'));
+    w = CW.transition(w, CW.actions.guessKey('F')); // wrong
+    w = CW.transition(w, CW.actions.resetQuiz());
+    assert.equal(w.quizPhase, 'IDLE');
+    assert.equal(w.quizCurrent, 1);
+    assert.equal(w.quizMistakes, 0);
+    assert.equal(w.quizRevealed[0], true);
+    assert.equal(w.quizRevealed[1], false);
+  });
+});
+
+describe('getQuizChoices', () => {
+  it('returns unrevealed keys', () => {
+    let w = CW.createWalk();
+    w = CW.transition(w, CW.actions.startQuiz());
+    const choices = CW.getQuizChoices(w);
+    assert.equal(choices.length, 11); // C is revealed, 11 remain
+    assert.ok(!choices.includes('C'));
+  });
+
+  it('shrinks as keys are revealed', () => {
+    let w = CW.createWalk();
+    w = CW.transition(w, CW.actions.startQuiz());
+    w = CW.transition(w, CW.actions.guessKey('C')); // play C
+    w = CW.transition(w, CW.actions.guessKey('G')); // play G
+    w = CW.transition(w, CW.actions.guessKey('D')); // play D
+    const choices = CW.getQuizChoices(w);
+    assert.equal(choices.length, 9); // 12 - 3 revealed
+    assert.ok(!choices.includes('C'));
+    assert.ok(!choices.includes('G'));
+    assert.ok(!choices.includes('D'));
+  });
+});
+
+describe('getQuizTarget', () => {
+  it('returns C as first target', () => {
+    let w = CW.createWalk();
+    w = CW.transition(w, CW.actions.startQuiz());
+    assert.equal(CW.getQuizTarget(w), 'C'); // index 0
+  });
+
+  it('advances after each correct guess', () => {
+    let w = CW.createWalk();
+    w = CW.transition(w, CW.actions.startQuiz());
+    w = CW.transition(w, CW.actions.guessKey('C'));
+    assert.equal(CW.getQuizTarget(w), 'G'); // index 1
+    w = CW.transition(w, CW.actions.guessKey('G'));
+    assert.equal(CW.getQuizTarget(w), 'D'); // index 2
+  });
+});

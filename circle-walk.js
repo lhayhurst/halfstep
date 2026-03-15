@@ -10,6 +10,8 @@ var CircleWalk = (function() {
   var CIRCLE = SE.CIRCLE_OF_FIFTHS;
 
   function createWalk() {
+    var revealed = new Array(12).fill(false);
+    revealed[0] = true; // C is always revealed
     return {
       phase: 'IDLE',
       circle: [...CIRCLE],
@@ -20,6 +22,10 @@ var CircleWalk = (function() {
       mode: 'guided',
       startedAt: null,
       completedAt: null,
+      quizPhase: 'IDLE',
+      quizRevealed: revealed,
+      quizCurrent: 1,
+      quizMistakes: 0,
     };
   }
 
@@ -42,6 +48,15 @@ var CircleWalk = (function() {
     resetWalk: function() {
       return { type: 'RESET_WALK' };
     },
+    startQuiz: function() {
+      return { type: 'START_QUIZ' };
+    },
+    guessKey: function(key) {
+      return { type: 'GUESS_KEY', key: key };
+    },
+    resetQuiz: function() {
+      return { type: 'RESET_QUIZ' };
+    },
   };
 
   function transition(state, action) {
@@ -52,6 +67,9 @@ var CircleWalk = (function() {
       case 'ACKNOWLEDGE_KEY': return handleAcknowledgeKey(state);
       case 'STOP_WALK':      return handleStopWalk(state);
       case 'RESET_WALK':     return createWalk();
+      case 'START_QUIZ':     return handleStartQuiz(state);
+      case 'GUESS_KEY':      return handleGuessKey(state, action);
+      case 'RESET_QUIZ':     return handleResetQuiz(state);
       default:               return state;
     }
   }
@@ -108,6 +126,37 @@ var CircleWalk = (function() {
     return { ...state, phase: 'IDLE' };
   }
 
+  function handleStartQuiz(state) {
+    if (state.quizPhase === 'QUIZZING') return state;
+    var revealed = new Array(12).fill(false);
+    revealed[0] = true; // C is shown but user must play it to start
+    return { ...state, quizPhase: 'QUIZZING', quizRevealed: revealed, quizCurrent: 0, quizMistakes: 0 };
+  }
+
+  function handleGuessKey(state, action) {
+    if (state.quizPhase !== 'QUIZZING') return state;
+    var correct = state.circle[state.quizCurrent] === action.key;
+    if (correct) {
+      var newRevealed = [...state.quizRevealed];
+      newRevealed[state.quizCurrent] = true;
+      var nextIdx = state.quizCurrent + 1;
+      var allRevealed = nextIdx >= 12;
+      return {
+        ...state,
+        quizRevealed: newRevealed,
+        quizCurrent: allRevealed ? state.quizCurrent : nextIdx,
+        quizPhase: allRevealed ? 'QUIZ_COMPLETE' : 'QUIZZING',
+      };
+    }
+    return { ...state, quizMistakes: state.quizMistakes + 1 };
+  }
+
+  function handleResetQuiz(state) {
+    var revealed = new Array(12).fill(false);
+    revealed[0] = true;
+    return { ...state, quizPhase: 'IDLE', quizRevealed: revealed, quizCurrent: 1, quizMistakes: 0 };
+  }
+
   // ── Queries ─────────────────────────────────────────────────
 
   function getCurrentKey(state) {
@@ -141,6 +190,29 @@ var CircleWalk = (function() {
         index: i,
       };
     });
+  }
+
+  function getQuizChoices(state) {
+    var choices = [];
+    for (var i = 0; i < 12; i++) {
+      if (!state.quizRevealed[i]) choices.push(state.circle[i]);
+    }
+    // Shuffle
+    for (var j = choices.length - 1; j > 0; j--) {
+      var k = Math.floor(Math.random() * (j + 1));
+      var tmp = choices[j];
+      choices[j] = choices[k];
+      choices[k] = tmp;
+    }
+    return choices;
+  }
+
+  function getQuizTarget(state) {
+    return state.circle[state.quizCurrent];
+  }
+
+  function isQuizComplete(state) {
+    return state.quizPhase === 'QUIZ_COMPLETE';
   }
 
   // ── Serialization ───────────────────────────────────────────
@@ -190,6 +262,9 @@ var CircleWalk = (function() {
     getCircleNodes: getCircleNodes,
     serializeWalk: serializeWalk,
     deserializeWalk: deserializeWalk,
+    getQuizChoices: getQuizChoices,
+    getQuizTarget: getQuizTarget,
+    isQuizComplete: isQuizComplete,
   };
 })();
 

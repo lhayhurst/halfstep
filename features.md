@@ -43,6 +43,7 @@
 - [ ] Classic progressions: I-IV-V-I, I-V-vi-IV, ii-V-I, 12-bar blues
 - [ ] Display chord name + notes, user plays the chord
 - [ ] Accept any voicing/inversion (match by pitch class set)
+- [ ] Inversion drills: practice root position, 1st, and 2nd inversions
 - [ ] Progression library: pop, jazz, classical, blues
 - [ ] Free chord play: show chord name for whatever the user plays
 
@@ -52,6 +53,7 @@
 - [x] Clean completion advances, dirty retries the same key
 - [x] Progress persists to localStorage (resume after reload)
 - [x] Walk completion celebration with retry stats
+- [x] Quiz mode: build the circle from memory (multiple choice)
 - [ ] Show relative minors
 - [ ] Drill: random jumps around the circle
 

@@ -952,6 +952,52 @@ main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
   margin-top: 1rem;
 }
 #circle-result.show { display: block; }
+
+/* Circle sub-mode tabs */
+#circle-sub-modes {
+  display: flex;
+  gap: 0;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  max-width: 200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#circle-sub-modes button {
+  flex: 1;
+  background: var(--surface);
+  color: var(--fg-dim);
+  border: 1px solid var(--header-border);
+  padding: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#circle-sub-modes button:first-child { border-radius: 6px 0 0 6px; }
+#circle-sub-modes button:last-child { border-radius: 0 6px 6px 0; }
+#circle-sub-modes button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Quiz */
+#circle-quiz { display: none; }
+#circle-quiz.active { display: block; }
+#circle-play-controls { display: none; }
+#circle-play-controls.active { display: block; }
+
+#quiz-prompt {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.6rem;
+}
+
+
+
+
+#quiz-feedback {
+  min-height: 1.5rem;
+  font-size: 0.9rem;
+}
 #circle-result h2 { font-size: 1.5rem; color: var(--green); margin-bottom: 0.3rem; }
 #circle-result .stats { font-size: 0.85rem; color: var(--fg-dim); }
 
@@ -1038,7 +1084,8 @@ main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
     </div>
     <h3>Circle Walk</h3>
     <div class="help-text">
-      <p>A guided journey through all 12 keys in circle-of-fifths order. Play each scale cleanly to advance — miss a note and you retry that key.</p>
+      <p><strong>Quiz</strong> — build the circle of fifths from memory. C is given, pick what comes next from the scrambled choices.</p>
+      <p><strong>Play</strong> — walk through all 12 keys playing each scale. Clean completion advances, mistakes retry.</p>
       <p>Progress is saved automatically. Stop and resume anytime.</p>
     </div>
     <h3>Tips</h3>
@@ -1117,17 +1164,33 @@ main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
 
 <!-- Circle Walk Panel -->
 <div id="circle-panel">
-  <svg id="circle-diagram" width="260" height="260" viewBox="0 0 260 260"></svg>
-  <div id="circle-status">Walk the Circle of Fifths</div>
-  <div id="circle-progress"></div>
-  <div id="circle-tip"></div>
-  <div id="circle-feedback"></div>
-  <button id="circle-start-btn">Start Walk</button>
-</div>
+  <div id="circle-sub-modes">
+    <button class="active" data-submode="quiz">Quiz</button>
+    <button data-submode="play">Play</button>
+  </div>
 
-<div id="circle-result">
-  <h2>Circle Complete!</h2>
-  <div class="stats" id="circle-result-stats"></div>
+  <svg id="circle-diagram" width="260" height="260" viewBox="0 0 260 260"></svg>
+
+  <!-- Quiz sub-mode -->
+  <div id="circle-quiz" class="active">
+    <div id="quiz-prompt">What key comes after C?</div>
+    <div id="quiz-feedback"></div>
+    <button id="quiz-start-btn" style="background:var(--accent);color:#fff;border:none;padding:0.5rem 1.8rem;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;margin-top:0.75rem;margin-bottom:1rem;">Start</button>
+  </div>
+
+  <!-- Play sub-mode -->
+  <div id="circle-play-controls">
+    <div id="circle-status">Walk the Circle of Fifths</div>
+    <div id="circle-progress"></div>
+    <div id="circle-tip"></div>
+    <div id="circle-feedback"></div>
+    <button id="circle-start-btn">Start Walk</button>
+  </div>
+
+  <div id="circle-result">
+    <h2 id="circle-result-title">Circle Complete!</h2>
+    <div class="stats" id="circle-result-stats"></div>
+  </div>
 </div>
 
 <!-- Shared: piano keyboard -->
@@ -1466,6 +1529,20 @@ function doStartRound() {
 function handleNote(midi) {
   playTone(midi);
   pressKey(midi);
+
+  // Route to circle quiz if active
+  if (activeGameMode === 'circle' && circleSubMode === 'quiz' && walkState.quizPhase === 'QUIZZING') {
+    var playedPC = midi % 12;
+    var target = CircleWalk.getQuizTarget(walkState);
+    var targetPC = ScaleEngine.NAME_TO_SEMI[target];
+    if (playedPC === targetPC) {
+      flashKey(midi, 'flash-green');
+      walkState = CircleWalk.transition(walkState, CircleWalk.actions.guessKey(target));
+      quizFeedbackEl.innerHTML = '<span style="color:var(--green)">\u2713 ' + target + '</span>';
+      setTimeout(function() { renderQuiz(); }, 400);
+    }
+    return;
+  }
 
   // Route to melody engine if melody mode is active
   if (activeGameMode === 'melody' && melodyState.phase === 'PLAYING') {
@@ -1933,7 +2010,10 @@ document.getElementById('mode-tabs').addEventListener('click', e => {
   melodyPanelEl.classList.toggle('active', tab === 'melody');
   circlePanelEl.classList.toggle('active', tab === 'circle');
   melodyResultEl.classList.remove('show');
-  if (tab === 'circle') renderCircle();
+  if (tab === 'circle') {
+    if (circleSubMode === 'quiz') renderQuiz();
+    else renderCircle();
+  }
 });
 
 // ── Melody Mode ───────────────────────────────────────────────
@@ -2129,6 +2209,13 @@ const circleFeedbackEl = document.getElementById('circle-feedback');
 const circleStartBtn = document.getElementById('circle-start-btn');
 const circleResultEl = document.getElementById('circle-result');
 const circleResultStatsEl = document.getElementById('circle-result-stats');
+const circleQuizEl = document.getElementById('circle-quiz');
+const circlePlayEl = document.getElementById('circle-play-controls');
+const quizPromptEl = document.getElementById('quiz-prompt');
+const quizFeedbackEl = document.getElementById('quiz-feedback');
+const quizStartBtn = document.getElementById('quiz-start-btn');
+
+let circleSubMode = 'quiz'; // 'quiz' | 'play'
 
 // Load saved walk progress
 let walkState = (function() {
@@ -2146,6 +2233,76 @@ function saveCircleWalk() {
 }
 
 // Build SVG circle diagram
+// Sub-mode toggle
+document.getElementById('circle-sub-modes').addEventListener('click', function(e) {
+  var btn = e.target.closest('button');
+  if (!btn) return;
+  circleSubMode = btn.dataset.submode;
+  document.querySelectorAll('#circle-sub-modes button').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  circleQuizEl.classList.toggle('active', circleSubMode === 'quiz');
+  circlePlayEl.classList.toggle('active', circleSubMode === 'play');
+  circleResultEl.classList.remove('show');
+  if (circleSubMode === 'quiz') renderQuiz();
+  if (circleSubMode === 'play') renderCircle();
+});
+
+// Quiz start
+quizStartBtn.addEventListener('click', function() {
+  if (walkState.quizPhase === 'QUIZ_COMPLETE') {
+    walkState = CircleWalk.transition(walkState, CircleWalk.actions.resetQuiz());
+  }
+  walkState = CircleWalk.transition(walkState, CircleWalk.actions.startQuiz());
+  renderQuiz();
+});
+
+function renderQuiz() {
+  renderCircleForQuiz();
+
+  if (walkState.quizPhase === 'IDLE') {
+    quizPromptEl.textContent = 'Play your way around the circle of fifths';
+    quizFeedbackEl.textContent = '';
+    quizStartBtn.style.display = '';
+    quizStartBtn.textContent = 'Start';
+    return;
+  }
+
+  if (walkState.quizPhase === 'QUIZ_COMPLETE') {
+    quizPromptEl.textContent = 'You played the entire circle!';
+    quizFeedbackEl.innerHTML = '<span style="color:var(--green)">Nice work!</span>';
+    quizStartBtn.style.display = '';
+    quizStartBtn.textContent = 'Play Again';
+    return;
+  }
+
+  // QUIZZING — piano input active
+  quizStartBtn.style.display = 'none';
+  if (walkState.quizCurrent === 0) {
+    quizPromptEl.textContent = 'Play C to begin';
+  } else {
+    var prevKey = walkState.circle[walkState.quizCurrent - 1];
+    quizPromptEl.textContent = 'Play the note a fifth above ' + prevKey;
+  }
+  quizFeedbackEl.textContent = '';
+}
+
+function renderCircleForQuiz() {
+  var groups = circleDiagramEl.querySelectorAll('.node-group');
+  groups.forEach(function(g, i) {
+    var text = g.querySelector('.node-text');
+    g.classList.remove('completed', 'current');
+    if (walkState.quizRevealed[i]) {
+      text.textContent = walkState.circle[i];
+      g.classList.add('completed');
+    } else {
+      text.textContent = '?';
+    }
+    if (walkState.quizPhase === 'QUIZZING' && i === walkState.quizCurrent) {
+      g.classList.add('current');
+    }
+  });
+}
+
 function buildCircleDiagram() {
   const cx = 130, cy = 130, r = 100;
   let svg = '';
@@ -2293,6 +2450,7 @@ buildScalePicker();
 buildDirectionPicker();
 buildCircleDiagram();
 renderCircle();
+renderQuiz();
 render();
 loadSamples();
 initMIDI();
