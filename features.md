@@ -36,8 +36,10 @@
 
 - [x] Jam Mode: free-form playing scored on staying in key
 
+- [x] Natural minor scales with Major/Minor toggle
+
 ## Scale Trainer Enhancements
-- [ ] Minor scales (natural, harmonic, melodic)
+- [ ] Harmonic and melodic minor scales
 
 ## Chord Mode
 - [x] Chord progression trainer with 6 progressions

@@ -135,7 +135,9 @@ h1 {
 
 /* ── Scale picker ───────────────────────────────── */
 #scale-picker,
-#direction-picker {
+#direction-picker,
+#scale-type-picker,
+#jam-scale-picker {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
@@ -144,7 +146,9 @@ h1 {
 }
 
 #scale-picker button,
-#direction-picker button {
+#direction-picker button,
+#scale-type-picker button,
+#jam-scale-picker button {
   background: var(--surface);
   color: var(--fg-dim);
   border: 1px solid transparent;
@@ -157,7 +161,9 @@ h1 {
 }
 
 #scale-picker button:hover,
-#direction-picker button:hover {
+#direction-picker button:hover,
+#scale-type-picker button:hover,
+#jam-scale-picker button:hover {
   border-color: var(--accent);
   color: var(--fg);
 }
@@ -178,7 +184,9 @@ h1 {
 }
 
 #scale-picker button.active,
-#direction-picker button.active {
+#direction-picker button.active,
+#scale-type-picker button.active,
+#jam-scale-picker button.active {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
@@ -579,13 +587,24 @@ main {
 
 #start-btn:hover { opacity: 0.85; }
 
-#start-btn.stop {
-  background: var(--surface);
-  color: var(--fg-dim);
-  border: 1px solid var(--header-border);
+#start-btn.stop,
+#melody-start-btn.stop,
+#circle-start-btn.stop,
+#jam-start-btn.stop,
+#chord-start-btn.stop {
+  background: var(--red) !important;
+  color: #fff !important;
+  border: none !important;
+  opacity: 0.85;
   font-size: 0.85rem;
   padding: 0.35rem 1.2rem;
 }
+
+#start-btn.stop:hover,
+#melody-start-btn.stop:hover,
+#circle-start-btn.stop:hover,
+#jam-start-btn.stop:hover,
+#chord-start-btn.stop:hover { opacity: 1; }
 
 /* ── Phase-aware visibility ────────────────────── */
 main[data-phase="FREE_PLAY"] #feedback-area,
@@ -702,12 +721,6 @@ main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
   font-weight: 600;
 }
 
-#melody-start-btn.stop {
-  background: var(--surface) !important;
-  color: var(--fg-dim) !important;
-  border: 1px solid var(--header-border) !important;
-  font-weight: 500;
-}
 
 #melody-score-bar {
   display: flex;
@@ -924,13 +937,6 @@ main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
 
 #circle-start-btn:hover { opacity: 0.85; }
 
-#circle-start-btn.stop {
-  background: var(--surface);
-  color: var(--fg-dim);
-  border: 1px solid var(--header-border);
-  font-size: 0.85rem;
-  padding: 0.35rem 1.2rem;
-}
 
 #circle-start-btn.reset {
   background: none;
@@ -1008,15 +1014,6 @@ main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
 #jam-panel.active ~ #celebration,
 #jam-panel.active ~ #round-complete { display: none; }
 
-#jam-key-select {
-  background: var(--surface);
-  color: var(--fg);
-  border: 1px solid var(--header-border);
-  padding: 0.3rem 0.6rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  margin-bottom: 0.5rem;
-}
 
 #jam-start-btn {
   background: var(--accent);
@@ -1030,13 +1027,6 @@ main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
   margin-bottom: 0.75rem;
 }
 
-#jam-start-btn.stop {
-  background: var(--surface);
-  color: var(--fg-dim);
-  border: 1px solid var(--header-border);
-  font-size: 0.85rem;
-  padding: 0.35rem 1.2rem;
-}
 
 #jam-score-bar {
   display: flex;
@@ -1110,11 +1100,6 @@ main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
   padding: 0.4rem 1.4rem !important;
 }
 
-#chord-start-btn.stop {
-  background: var(--surface) !important;
-  color: var(--fg-dim) !important;
-  border: 1px solid var(--header-border) !important;
-}
 
 #chord-sub-modes {
   display: flex;
@@ -1322,6 +1307,7 @@ main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
 
 <div id="scale-picker"></div>
 <div id="direction-picker"></div>
+<div id="scale-type-picker"></div>
 
 <button id="start-btn">Start</button>
 
@@ -1407,11 +1393,9 @@ main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
 
 <!-- Jam Mode Panel -->
 <div id="jam-panel">
-  <div id="jam-status">Jam Mode</div>
-  <div>
-    <select id="jam-key-select"></select>
-    <button id="jam-start-btn">Start Jam</button>
-  </div>
+  <div id="jam-scale-picker"></div>
+  <button id="jam-start-btn">Start Jam</button>
+  <div id="jam-status"></div>
   <div id="jam-score-bar">
     <div><span>Score:</span> <strong id="jam-score">0</strong></div>
     <div><span>In Key:</span> <strong id="jam-accuracy">&ndash;</strong></div>
@@ -1499,6 +1483,7 @@ main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
 let state = TrainingSession.createSession({ mastery: loadMastery() });
 let pinnedRoot = 'random';
 let direction = 'ascending';
+let scaleType = 'major'; // 'major' | 'minor'
 let mode = localStorage.getItem('halfstep-mode') || 'guided';
 let audioCtx = null;
 let midiAccess = null;
@@ -1529,6 +1514,7 @@ const mainEl = document.querySelector('main');
 const pianoEl = document.getElementById('piano');
 const scalePickerEl = document.getElementById('scale-picker');
 const dirPickerEl = document.getElementById('direction-picker');
+const scaleTypePickerEl = document.getElementById('scale-type-picker');
 const startBtn = document.getElementById('start-btn');
 const promptEl = document.getElementById('scale-prompt');
 const tipEl = document.getElementById('theory-tip');
@@ -1750,6 +1736,32 @@ function buildDirectionPicker() {
   });
 }
 
+// ── Scale type picker ─────────────────────────────────────────
+function buildScaleTypePicker() {
+  [
+    { label: 'Major', value: 'major' },
+    { label: 'Minor', value: 'minor' },
+  ].forEach(function(opt) {
+    var btn = document.createElement('button');
+    btn.textContent = opt.label;
+    btn.dataset.scaleType = opt.value;
+    if (opt.value === 'major') btn.classList.add('active');
+    btn.addEventListener('click', function() {
+      scaleType = opt.value;
+      scaleTypePickerEl.querySelectorAll('button').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      if (state.phase === 'TRAINING') {
+        state = TrainingSession.transition(state, TrainingSession.actions.stopRound());
+      } else if (state.phase === 'ROUND_COMPLETE') {
+        if (acknowledgeTimer) { clearTimeout(acknowledgeTimer); acknowledgeTimer = null; }
+        state = TrainingSession.transition(state, TrainingSession.actions.acknowledge());
+      }
+      render();
+    });
+    scaleTypePickerEl.appendChild(btn);
+  });
+}
+
 // ── Pick root ─────────────────────────────────────────────────
 function pickRoot() {
   if (pinnedRoot !== 'random') return pinnedRoot;
@@ -1771,7 +1783,8 @@ function updateStartButton() {
     startBtn.style.display = '';
     startBtn.classList.remove('stop');
     const root = pinnedRoot === 'random' ? 'Random' : pinnedRoot;
-    startBtn.textContent = `Start ${root} Major \u25B6`;
+    var typeLabel = scaleType === 'minor' ? 'Minor' : 'Major';
+    startBtn.textContent = `Start ${root} ${typeLabel} \u25B6`;
   }
 }
 
@@ -1788,7 +1801,7 @@ function doStartRound() {
   if (acknowledgeTimer) { clearTimeout(acknowledgeTimer); acknowledgeTimer = null; }
   const root = pickRoot();
   const startOctave = ScaleEngine.chooseStartOctave(root, FIRST_MIDI, LAST_MIDI);
-  state = TrainingSession.transition(state, TrainingSession.actions.startRound(root, direction, mode, startOctave, Date.now()));
+  state = TrainingSession.transition(state, TrainingSession.actions.startRound(root, direction, mode, startOctave, Date.now(), scaleType));
   render();
 }
 
@@ -1828,14 +1841,35 @@ function handleNote(midi) {
   }
 
   // Route to jam mode if active
-  if (activeGameMode === 'jam' && jamState.phase === 'JAMMING') {
-    jamState = JamSession.transition(jamState, JamSession.actions.playNote(midi, Date.now()));
-    if (jamState.lastNoteInKey) {
-      flashKey(midi, 'flash-green');
-    } else {
-      flashKey(midi, 'flash-red');
+  if (activeGameMode === 'jam') {
+    if (jamState.phase === 'JAMMING') {
+      jamState = JamSession.transition(jamState, JamSession.actions.playNote(midi, Date.now()));
+      if (jamState.lastNoteInKey) {
+        flashKey(midi, 'flash-green');
+      } else {
+        flashKey(midi, 'flash-red');
+      }
+      updateJamScoreDisplay();
+      return;
     }
-    updateJamScoreDisplay();
+    // Free play in jam: select scale via MIDI
+    var playedPC = midi % 12;
+    var matchedRoot = null;
+    ScaleEngine.ROOTS.forEach(function(r) {
+      if (ScaleEngine.NAME_TO_SEMI[r] === playedPC) matchedRoot = r;
+    });
+    if (matchedRoot) {
+      if (jamPinnedRoot === matchedRoot) {
+        // Second press — start jam
+        jamStartBtn.click();
+      } else {
+        jamPinnedRoot = matchedRoot;
+        jamScalePickerEl.querySelectorAll('button').forEach(function(b) {
+          b.classList.toggle('active', b.dataset.root === matchedRoot);
+        });
+        updateJamStartButton();
+      }
+    }
     return;
   }
 
@@ -1881,12 +1915,19 @@ function handleNote(midi) {
         if (ScaleEngine.NAME_TO_SEMI[r] === playedPC) matchedRoot = r;
       });
       if (matchedRoot) {
-        pinnedRoot = matchedRoot;
-        scalePickerEl.querySelectorAll('button').forEach(function(b) {
-          b.classList.toggle('active', b.dataset.root === matchedRoot);
-        });
-        updateStartButton();
-        midiLog(`<span class="note">selected ${matchedRoot} major</span>`);
+        if (pinnedRoot === matchedRoot) {
+          // Second press — start training
+          doStartRound();
+          midiLog(`<span class="note">starting ${matchedRoot} ${scaleType}</span>`);
+        } else {
+          // First press — select the scale
+          pinnedRoot = matchedRoot;
+          scalePickerEl.querySelectorAll('button').forEach(function(b) {
+            b.classList.toggle('active', b.dataset.root === matchedRoot);
+          });
+          updateStartButton();
+          midiLog(`<span class="note">selected ${matchedRoot} ${scaleType}</span>`);
+        }
       } else {
         midiLog(`<span class="skip">free play</span>`);
       }
@@ -1962,8 +2003,10 @@ function renderPrompt() {
   } else if (state.round) {
     const dir = state.round.direction;
     const dirLabel = dir === 'both' ? '(up & down)' : dir === 'descending' ? '(descending)' : '';
-    promptEl.textContent = `Play the ${state.round.root} major scale ${dirLabel}`.trim();
-    tipEl.textContent = ScaleEngine.TIPS[state.round.root] || '';
+    var scaleLabel = state.round.scaleType === 'minor' ? 'minor' : 'major';
+    promptEl.textContent = `Play the ${state.round.root} ${scaleLabel} scale ${dirLabel}`.trim();
+    var tips = state.round.scaleType === 'minor' ? ScaleEngine.MINOR_TIPS : ScaleEngine.TIPS;
+    tipEl.textContent = (tips[state.round.root]) || '';
   }
 }
 
@@ -2077,7 +2120,8 @@ function renderJournal() {
   const scaleEntries = state.journal.map(e => ({ ...e, type: 'scale' }));
   const melodyEntries = melodyState.journal.map(e => ({ ...e, type: 'melody' }));
   const chordEntries = chordState.journal.map(e => ({ ...e, type: e.type || 'chord' }));
-  const all = [...scaleEntries, ...melodyEntries, ...chordEntries];
+  const jamEntries = jamState.journal.map(e => ({ ...e, type: 'jam' }));
+  const all = [...scaleEntries, ...melodyEntries, ...chordEntries, ...jamEntries];
   const total = all.length;
 
   journalEl.querySelector('summary').textContent = `Session Log (${total} round${total !== 1 ? 's' : ''})`;
@@ -2094,6 +2138,9 @@ function renderJournal() {
       tr.innerHTML = `<td>${i + 1}</td><td>\u266C ${entry.progressionName}</td><td>${entry.key}</td><td>${entry.correctCount}/${entry.totalChords}</td><td class="clean-yes">\u2713</td><td></td>`;
     } else if (entry.type === 'inversion') {
       tr.innerHTML = `<td>${i + 1}</td><td>\u266C ${entry.chordName} inversions</td><td></td><td>3/3</td><td class="clean-yes">\u2713</td><td></td>`;
+    } else if (entry.type === 'jam') {
+      const secs = (entry.durationMs / 1000).toFixed(1);
+      tr.innerHTML = `<td>${i + 1}</td><td>\u266A Jam ${entry.root}</td><td></td><td>${entry.accuracy}%</td><td>${entry.score}pts</td><td>${secs}s</td>`;
     }
     journalBody.appendChild(tr);
   });
@@ -2741,7 +2788,7 @@ function doCircleRound() {
   const root = CircleWalk.getCurrentKey(walkState);
   const startOctave = ScaleEngine.chooseStartOctave(root, FIRST_MIDI, LAST_MIDI);
   state = TrainingSession.transition(state, TrainingSession.actions.startRound(
-    root, walkState.direction, walkState.mode, startOctave, Date.now()
+    root, walkState.direction, walkState.mode, startOctave, Date.now(), scaleType
   ));
   renderCircle();
   render();
@@ -2792,7 +2839,7 @@ function onCircleRoundComplete() {
 
 // ── Jam Mode ──────────────────────────────────────────────────
 const jamPanelEl = document.getElementById('jam-panel');
-const jamKeySelectEl = document.getElementById('jam-key-select');
+const jamScalePickerEl = document.getElementById('jam-scale-picker');
 const jamStartBtn = document.getElementById('jam-start-btn');
 const jamScoreEl = document.getElementById('jam-score');
 const jamAccuracyEl = document.getElementById('jam-accuracy');
@@ -2806,31 +2853,53 @@ const jamResultStatsEl = document.getElementById('jam-result-stats');
 
 let jamState = JamSession.createJam();
 let jamTimerInterval = null;
+let jamPinnedRoot = 'C';
 
-// Populate key selector
-ScaleEngine.ROOTS.forEach(function(r) {
-  var opt = document.createElement('option');
-  opt.value = r;
-  opt.textContent = r + ' major';
-  jamKeySelectEl.appendChild(opt);
-});
+// Build jam scale picker
+function buildJamScalePicker() {
+  jamScalePickerEl.innerHTML = '';
+  ScaleEngine.ROOTS.forEach(function(r) {
+    var btn = document.createElement('button');
+    btn.textContent = r;
+    btn.dataset.root = r;
+    if (r === jamPinnedRoot) btn.classList.add('active');
+    btn.addEventListener('click', function() {
+      jamPinnedRoot = r;
+      jamScalePickerEl.querySelectorAll('button').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      updateJamStartButton();
+    });
+    jamScalePickerEl.appendChild(btn);
+  });
+}
+
+function updateJamStartButton() {
+  if (jamState.phase === 'JAMMING') {
+    jamStartBtn.textContent = 'Stop Jam';
+    jamStartBtn.classList.add('stop');
+  } else {
+    var typeLabel = scaleType === 'minor' ? 'minor' : 'major';
+    jamStartBtn.textContent = 'Start ' + jamPinnedRoot + ' ' + typeLabel + ' Jam';
+    jamStartBtn.classList.remove('stop');
+  }
+}
 
 jamStartBtn.addEventListener('click', function() {
   if (jamState.phase === 'JAMMING') {
     jamState = JamSession.transition(jamState, JamSession.actions.stopJam(Date.now()));
     stopJamTimer();
     renderJamResult();
+    updateJamStartButton();
     return;
   }
 
-  var root = jamKeySelectEl.value;
-  if (!root) return;
-
+  var root = jamPinnedRoot;
+  var typeLabel = scaleType === 'minor' ? 'minor' : 'major';
   jamState = JamSession.transition(jamState, JamSession.actions.startJam(root, Date.now()));
   jamResultEl.classList.remove('show');
   jamStartBtn.textContent = 'Stop Jam';
   jamStartBtn.classList.add('stop');
-  jamStatusEl.textContent = 'Jamming in ' + root + ' major';
+  jamStatusEl.textContent = 'Jamming in ' + root + ' ' + typeLabel;
   jamFeedbackEl.textContent = 'Play!';
   jamScoreEl.textContent = '0';
   jamAccuracyEl.textContent = '\u2013';
@@ -2869,9 +2938,9 @@ function updateKeyboardForJam() {
     el.classList.remove('scale-highlight', 'root-mark');
     el.querySelector('.label').textContent = '';
   });
-  var scaleNotes = ScaleEngine.getScaleNotes(jamState.root);
+  var scaleNotes = ScaleEngine.getScaleNotes(jamState.root, scaleType);
   var scaleMidi = ScaleEngine.getScaleMidiNotes(jamState.root,
-    ScaleEngine.chooseStartOctave(jamState.root, FIRST_MIDI, LAST_MIDI));
+    ScaleEngine.chooseStartOctave(jamState.root, FIRST_MIDI, LAST_MIDI), scaleType);
   scaleMidi.forEach(function(midi, i) {
     var el = keyElements[midi];
     if (el) {
@@ -2892,6 +2961,7 @@ function renderJamResult() {
   jamResultTitleEl.textContent = jamState.root + ' major \u2014 ' + acc + '% in key';
   jamResultStatsEl.textContent = jamState.notesPlayed + ' notes \u00b7 score: ' + jamState.score + ' \u00b7 ' + secs + 's';
   jamResultEl.classList.add('show');
+  renderJournal();
 
   // Clear keyboard highlights
   Object.values(keyElements).forEach(function(el) {
@@ -3194,6 +3264,8 @@ function onChordComplete() {
 buildPiano();
 buildScalePicker();
 buildDirectionPicker();
+buildScaleTypePicker();
+buildJamScalePicker();
 buildCircleDiagram();
 renderCircle();
 renderQuiz();

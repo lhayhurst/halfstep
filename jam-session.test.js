@@ -212,3 +212,37 @@ describe('isNoteInScale', () => {
     assert.equal(JS.isNoteInScale(49, [0, 2, 4, 5, 7, 9, 11]), false); // C#3
   });
 });
+
+// ── Journal ───────────────────────────────────────────────────
+
+describe('jam journal', () => {
+  it('starts with empty journal', () => {
+    assert.deepEqual(JS.createJam().journal, []);
+  });
+
+  it('adds entry on stopJam', () => {
+    let j = JS.createJam();
+    j = JS.transition(j, JS.actions.startJam('C', 1000));
+    j = JS.transition(j, JS.actions.playNote(60, 1100));
+    j = JS.transition(j, JS.actions.playNote(61, 1200));
+    j = JS.transition(j, JS.actions.stopJam(3000));
+    assert.equal(j.journal.length, 1);
+    assert.equal(j.journal[0].root, 'C');
+    assert.equal(j.journal[0].notesPlayed, 2);
+    assert.equal(j.journal[0].score, 0); // +1 -1
+    assert.equal(j.journal[0].durationMs, 2000);
+  });
+
+  it('journal persists across sessions', () => {
+    let j = JS.createJam();
+    j = JS.transition(j, JS.actions.startJam('C', 1000));
+    j = JS.transition(j, JS.actions.playNote(60, 1100));
+    j = JS.transition(j, JS.actions.stopJam(2000));
+    j = JS.transition(j, JS.actions.startJam('G', 3000));
+    j = JS.transition(j, JS.actions.playNote(55, 3100));
+    j = JS.transition(j, JS.actions.stopJam(4000));
+    assert.equal(j.journal.length, 2);
+    assert.equal(j.journal[0].root, 'C');
+    assert.equal(j.journal[1].root, 'G');
+  });
+});

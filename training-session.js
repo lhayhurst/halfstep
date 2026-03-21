@@ -37,8 +37,8 @@ var TrainingSession = (function() {
   }
 
   var actions = {
-    startRound: function(root, direction, mode, startOctave, now) {
-      return { type: 'START_ROUND', root: root, direction: direction, mode: mode, startOctave: startOctave, now: now };
+    startRound: function(root, direction, mode, startOctave, now, scaleType) {
+      return { type: 'START_ROUND', root: root, direction: direction, mode: mode, startOctave: startOctave, now: now, scaleType: scaleType || 'major' };
     },
     playNote: function(midi, now) {
       return { type: 'PLAY_NOTE', midi: midi, now: now };
@@ -64,8 +64,9 @@ var TrainingSession = (function() {
   function handleStartRound(state, action) {
     var root = action.root, direction = action.direction, mode = action.mode;
     var startOctave = action.startOctave, now = action.now;
-    var rawNames = SE.getScaleNotes(root);
-    var rawMidi = SE.getScaleMidiNotes(root, startOctave);
+    var st = action.scaleType || 'major';
+    var rawNames = SE.getScaleNotes(root, st);
+    var rawMidi = SE.getScaleMidiNotes(root, startOctave, st);
     var seq = buildExpectedSequence(rawNames, rawMidi, direction);
 
     return {
@@ -73,7 +74,7 @@ var TrainingSession = (function() {
       phase: 'TRAINING',
       result: null,
       round: {
-        root: root, direction: direction, mode: mode,
+        root: root, direction: direction, mode: mode, scaleType: st,
         scaleNames: seq.names, scaleMidi: seq.midi,
         highlightNames: [...rawNames], highlightMidi: [...rawMidi],
         expectedIndex: 0, attempts: 0, correctCount: 0, mistakes: [],

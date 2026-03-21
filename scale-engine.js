@@ -30,6 +30,22 @@ const NAME_TO_SEMI = {
 };
 
 const MAJOR_INTERVALS = [0,2,4,5,7,9,11,12];
+const MINOR_INTERVALS = [0,2,3,5,7,8,10,12]; // W H W W H W W
+
+const MINOR_SCALE_SPELLINGS = {
+  'C':  ['C','D','Eb','F','G','Ab','Bb','C'],
+  'G':  ['G','A','Bb','C','D','Eb','F','G'],
+  'D':  ['D','E','F','G','A','Bb','C','D'],
+  'A':  ['A','B','C','D','E','F','G','A'],
+  'E':  ['E','F#','G','A','B','C','D','E'],
+  'B':  ['B','C#','D','E','F#','G','A','B'],
+  'F#': ['F#','G#','A','B','C#','D','E','F#'],
+  'F':  ['F','G','Ab','Bb','C','Db','Eb','F'],
+  'Bb': ['Bb','C','Db','Eb','F','Gb','Ab','Bb'],
+  'Eb': ['Eb','F','Gb','Ab','Bb','Cb','Db','Eb'],
+  'Ab': ['Ab','Bb','Cb','Db','Eb','Fb','Gb','Ab'],
+  'Db': ['Db','Eb','Fb','Gb','Ab','A','Cb','Db'],
+};
 
 const TIPS = {
   'C':  'The all-natural scale \u2014 no sharps or flats.',
@@ -46,14 +62,31 @@ const TIPS = {
   'Db': 'Five flats: Db, Eb, Gb, Ab, and Bb.',
 };
 
-function getScaleNotes(root) {
+const MINOR_TIPS = {
+  'C':  'C minor \u2014 relative of Eb major. Three flats: Eb, Ab, Bb.',
+  'G':  'G minor \u2014 relative of Bb major. Two flats: Bb, Eb.',
+  'D':  'D minor \u2014 relative of F major. One flat: Bb.',
+  'A':  'A minor \u2014 relative of C major. No sharps or flats!',
+  'E':  'E minor \u2014 relative of G major. One sharp: F#.',
+  'B':  'B minor \u2014 relative of D major. Two sharps: F#, C#.',
+  'F#': 'F# minor \u2014 relative of A major. Three sharps: F#, C#, G#.',
+  'F':  'F minor \u2014 relative of Ab major. Four flats: Ab, Bb, Db, Eb.',
+  'Bb': 'Bb minor \u2014 relative of Db major. Five flats.',
+  'Eb': 'Eb minor \u2014 relative of Gb major. Six flats.',
+  'Ab': 'Ab minor \u2014 relative of Cb major. Seven flats.',
+  'Db': 'Db minor \u2014 a rare key. Usually written as C# minor.',
+};
+
+function getScaleNotes(root, scaleType) {
+  if (scaleType === 'minor') return MINOR_SCALE_SPELLINGS[root];
   return SCALE_SPELLINGS[root];
 }
 
-function getScaleMidiNotes(root, startOctave) {
+function getScaleMidiNotes(root, startOctave, scaleType) {
   const rootSemi = NAME_TO_SEMI[root];
   const baseMidi = 12 * (startOctave + 1) + rootSemi;
-  return MAJOR_INTERVALS.map(i => baseMidi + i);
+  const intervals = scaleType === 'minor' ? MINOR_INTERVALS : MAJOR_INTERVALS;
+  return intervals.map(i => baseMidi + i);
 }
 
 function midiToNoteName(midi) {
@@ -169,6 +202,9 @@ const ScaleEngine = {
   CIRCLE_OF_FIFTHS,
   NAME_TO_SEMI,
   MAJOR_INTERVALS,
+  MINOR_INTERVALS,
+  MINOR_TIPS,
+  MINOR_SCALE_SPELLINGS,
   TIPS,
   getScaleNotes,
   getScaleMidiNotes,

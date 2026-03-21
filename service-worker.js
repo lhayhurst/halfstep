@@ -1,4 +1,4 @@
-const CACHE_NAME = 'halfstep-v26';
+const CACHE_NAME = 'halfstep-v27';
 
 const SAMPLE_NAMES = [
   'C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'

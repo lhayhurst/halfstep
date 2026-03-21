@@ -19,6 +19,7 @@ var JamSession = (function() {
       lastNoteInKey: null,
       startedAt: null,
       durationMs: null,
+      journal: [],
     };
   }
 
@@ -61,6 +62,7 @@ var JamSession = (function() {
       lastNoteInKey: null,
       startedAt: action.now,
       durationMs: null,
+      journal: state.journal,
     };
   }
 
@@ -79,10 +81,22 @@ var JamSession = (function() {
 
   function handleStopJam(state, action) {
     if (state.phase !== 'JAMMING') return state;
+    var dur = action.now - state.startedAt;
+    var entry = {
+      id: state.journal.length + 1,
+      root: state.root,
+      score: state.score,
+      notesPlayed: state.notesPlayed,
+      inKeyCount: state.inKeyCount,
+      outOfKeyCount: state.outOfKeyCount,
+      accuracy: state.notesPlayed > 0 ? Math.round((state.inKeyCount / state.notesPlayed) * 100) : 0,
+      durationMs: dur,
+    };
     return {
       ...state,
       phase: 'DONE',
-      durationMs: action.now - state.startedAt,
+      durationMs: dur,
+      journal: [].concat(state.journal, [entry]),
     };
   }
 

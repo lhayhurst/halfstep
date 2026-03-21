@@ -452,6 +452,91 @@ describe('Gb major (enharmonic of F#)', () => {
   });
 });
 
+// ── Natural minor scales ──────────────────────────────────────
+
+describe('getScaleNotes with minor', () => {
+  it('returns A natural minor (relative of C major)', () => {
+    assert.deepEqual(SE.getScaleNotes('A', 'minor'), ['A','B','C','D','E','F','G','A']);
+  });
+
+  it('returns D natural minor', () => {
+    assert.deepEqual(SE.getScaleNotes('D', 'minor'), ['D','E','F','G','A','Bb','C','D']);
+  });
+
+  it('returns E natural minor', () => {
+    assert.deepEqual(SE.getScaleNotes('E', 'minor'), ['E','F#','G','A','B','C','D','E']);
+  });
+
+  it('returns C natural minor', () => {
+    assert.deepEqual(SE.getScaleNotes('C', 'minor'), ['C','D','Eb','F','G','Ab','Bb','C']);
+  });
+
+  it('returns 8 notes for every root', () => {
+    for (const root of SE.ROOTS) {
+      const notes = SE.getScaleNotes(root, 'minor');
+      assert.equal(notes.length, 8, root + ' minor should have 8 notes');
+    }
+  });
+
+  it('first and last notes are the same', () => {
+    for (const root of SE.ROOTS) {
+      const notes = SE.getScaleNotes(root, 'minor');
+      assert.equal(notes[0], notes[7], root + ' minor should start and end on root');
+    }
+  });
+
+  it('defaults to major when no type specified', () => {
+    assert.deepEqual(SE.getScaleNotes('C'), ['C','D','E','F','G','A','B','C']);
+    assert.deepEqual(SE.getScaleNotes('C', 'major'), ['C','D','E','F','G','A','B','C']);
+  });
+});
+
+describe('minor scale intervals', () => {
+  it('every minor scale follows W H W W H W W pattern', () => {
+    const expectedPattern = [2, 1, 2, 2, 1, 2, 2];
+    for (const root of SE.ROOTS) {
+      const notes = SE.getScaleNotes(root, 'minor');
+      const semitones = notes.map(n => SE.NAME_TO_SEMI[n]);
+      for (let i = 0; i < 7; i++) {
+        const interval = ((semitones[i + 1] - semitones[i]) + 12) % 12;
+        assert.equal(interval, expectedPattern[i],
+          root + ' minor: interval ' + i + '\u2192' + (i+1) + ' (' + notes[i] + '\u2192' + notes[i+1] + ') should be ' + expectedPattern[i] + ', got ' + interval);
+      }
+    }
+  });
+});
+
+describe('getScaleMidiNotes with minor', () => {
+  it('A minor starting at octave 3 starts at MIDI 57', () => {
+    const midi = SE.getScaleMidiNotes('A', 3, 'minor');
+    assert.equal(midi[0], 57); // A3
+    assert.equal(midi[7], 69); // A4
+  });
+
+  it('intervals match W H W W H W W', () => {
+    const expectedIntervals = [2, 1, 2, 2, 1, 2, 2];
+    for (const root of SE.ROOTS) {
+      const midi = SE.getScaleMidiNotes(root, 3, 'minor');
+      for (let i = 0; i < 7; i++) {
+        assert.equal(midi[i + 1] - midi[i], expectedIntervals[i],
+          root + ' minor: MIDI interval ' + i + '\u2192' + (i+1));
+      }
+    }
+  });
+
+  it('defaults to major when no type specified', () => {
+    assert.deepEqual(SE.getScaleMidiNotes('C', 3), SE.getScaleMidiNotes('C', 3, 'major'));
+  });
+});
+
+describe('MINOR_TIPS', () => {
+  it('every root has a minor theory tip', () => {
+    for (const root of SE.ROOTS) {
+      assert.ok(SE.MINOR_TIPS[root], root + ' should have a minor tip');
+    }
+  });
+});
+
 // ── Mastery tracking ──────────────────────────────────────────
 
 describe('createEmptyMastery', () => {
