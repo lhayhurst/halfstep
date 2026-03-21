@@ -40,13 +40,14 @@
 - [ ] Minor scales (natural, harmonic, melodic)
 
 ## Chord Mode
-- [ ] Chord progression trainer
-- [ ] Classic progressions: I-IV-V-I, I-V-vi-IV, ii-V-I, 12-bar blues
-- [ ] Display chord name + notes, user plays the chord
-- [ ] Accept any voicing/inversion (match by pitch class set)
-- [ ] Inversion drills: practice root position, 1st, and 2nd inversions
-- [ ] Progression library: pop, jazz, classical, blues
-- [ ] Free chord play: show chord name for whatever the user plays
+- [x] Chord progression trainer with 6 progressions
+- [x] Classic progressions: I-IV-V-I, I-V-vi-IV, ii-V-I, 12-bar blues, Pachelbel
+- [x] Display chord name + notes, user plays the chord
+- [x] Accept any voicing/inversion (match by pitch class set)
+- [x] Inversion detection and display ("F major, 1st inversion")
+- [x] Free chord play: show chord name for whatever the user plays
+- [x] Inversion drills: practice root position, 1st, and 2nd inversions for any diatonic chord
+- [ ] 7th chord support
 
 ## Circle of Fifths Mode
 - [x] Visual SVG circle of fifths diagram with animated current position

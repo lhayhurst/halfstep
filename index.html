@@ -1076,6 +1076,129 @@ main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
 #jam-result h2 { font-size: 1.2rem; margin-bottom: 0.3rem; }
 #jam-result .stats { font-size: 0.85rem; color: var(--fg-dim); }
 
+/* ── Chord Mode ────────────────────────────────── */
+#chord-panel { display: none; text-align: center; }
+#chord-panel.active { display: block; }
+#chord-panel.active ~ #stats-bar,
+#chord-panel.active ~ #celebration,
+#chord-panel.active ~ #round-complete { display: none; }
+
+#chord-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+#chord-controls select, #chord-controls button {
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--header-border);
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+#chord-start-btn {
+  background: var(--accent) !important;
+  color: #fff !important;
+  border: none !important;
+  font-weight: 600;
+  padding: 0.4rem 1.4rem !important;
+}
+
+#chord-start-btn.stop {
+  background: var(--surface) !important;
+  color: var(--fg-dim) !important;
+  border: 1px solid var(--header-border) !important;
+}
+
+#chord-sub-modes {
+  display: flex;
+  gap: 0;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  max-width: 240px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#chord-sub-modes button {
+  flex: 1;
+  background: var(--surface);
+  color: var(--fg-dim);
+  border: 1px solid var(--header-border);
+  padding: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#chord-sub-modes button:first-child { border-radius: 6px 0 0 6px; }
+#chord-sub-modes button:last-child { border-radius: 0 6px 6px 0; }
+#chord-sub-modes button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+#chord-progression-display {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.chord-card {
+  background: var(--surface);
+  border: 2px solid var(--header-border);
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  min-width: 55px;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.chord-card .roman { font-size: 0.75rem; color: var(--fg-dim); }
+.chord-card .name { font-size: 1rem; font-weight: 600; }
+
+.chord-card.current {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.chord-card.done {
+  border-color: var(--green);
+  background: rgba(34,197,94,0.1);
+}
+
+.chord-card.done .name::after { content: ' \2713'; color: var(--green); }
+
+#chord-status {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  min-height: 1.5em;
+}
+
+#chord-feedback {
+  font-size: 0.9rem;
+  min-height: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+#chord-held {
+  font-size: 0.8rem;
+  color: var(--fg-dim);
+  min-height: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+#chord-result {
+  display: none;
+}
+#chord-result.show { display: block; }
+#chord-result h2 { font-size: 1.2rem; margin-bottom: 0.3rem; }
+
 </style>
 <script src="scale-engine.js"></script>
 <script src="training-session.js"></script>
@@ -1083,6 +1206,7 @@ main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
 <script src="melody-engine.js"></script>
 <script src="circle-walk.js"></script>
 <script src="jam-session.js"></script>
+<script src="chord-engine.js"></script>
 </head>
 <body>
 <script>window.onerror = function(msg, src, line) {
@@ -1158,6 +1282,11 @@ main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
       <p>Switch to <strong>Melody Mode</strong> using the tab at the top. Notes from famous melodies fall toward the keyboard — play them as they cross the hit zone.</p>
       <p>Pick a melody and key, then hit <strong>Play</strong>. Score points for each hit, build streak multipliers, and earn a rating (S/A/B/C/D) at the end.</p>
     </div>
+    <h3>Chord Mode</h3>
+    <div class="help-text">
+      <p><strong>Progression</strong> — pick a progression (I-IV-V-I, Pop, Jazz ii-V-I, etc.) and a key. Play each chord in order. Any voicing or inversion works — the app matches by pitch class.</p>
+      <p><strong>Free Chord</strong> — play any notes and the app identifies the chord in real-time, including inversion.</p>
+    </div>
     <h3>Jam Mode</h3>
     <div class="help-text">
       <p>Pick a key and jam freely. Every in-key note scores +1, every out-of-key note scores -1. Scale notes are highlighted on the keyboard to help you learn.</p>
@@ -1185,6 +1314,7 @@ main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
   <button data-tab="melody">Melody Mode</button>
   <button data-tab="circle">Circle Walk</button>
   <button data-tab="jam">Jam</button>
+  <button data-tab="chord">Chords</button>
 </div>
 
 <!-- Scale Trainer Panel -->
@@ -1292,6 +1422,41 @@ main[data-phase="ROUND_COMPLETE"] #start-btn { display: none; }
   <div id="jam-result">
     <h2 id="jam-result-title"></h2>
     <div class="stats" id="jam-result-stats"></div>
+  </div>
+</div>
+
+<!-- Chord Mode Panel -->
+<div id="chord-panel">
+  <div id="chord-sub-modes">
+    <button class="active" data-submode="progression">Progression</button>
+    <button data-submode="free">Free Chord</button>
+    <button data-submode="inversions">Inversions</button>
+  </div>
+
+  <div id="chord-prog-controls">
+    <div id="chord-controls">
+      <select id="chord-key-select"></select>
+      <select id="chord-prog-select"></select>
+      <button id="chord-start-btn">Start</button>
+    </div>
+  </div>
+
+  <div id="chord-inv-controls" style="display:none">
+    <div id="chord-controls" style="margin-bottom:0.75rem">
+      <select id="chord-inv-key-select"></select>
+      <select id="chord-inv-chord-select"></select>
+      <button id="chord-inv-start-btn" style="background:var(--accent);color:#fff;border:none;padding:0.4rem 1.4rem;border-radius:6px;font-weight:600;cursor:pointer;">Start</button>
+    </div>
+  </div>
+
+  <div id="chord-progression-display"></div>
+
+  <div id="chord-status"></div>
+  <div id="chord-feedback"></div>
+  <div id="chord-held"></div>
+
+  <div id="chord-result">
+    <h2 id="chord-result-title"></h2>
   </div>
 </div>
 
@@ -1632,6 +1797,36 @@ function handleNote(midi) {
   playTone(midi);
   pressKey(midi);
 
+  // Route to chord mode if active
+  if (activeGameMode === 'chord' && (chordState.phase === 'PLAYING' || chordState.phase === 'FREE_CHORD' || chordState.phase === 'INVERSION_DRILL')) {
+    var prevStep = chordState.inversionDrill ? chordState.inversionDrill.currentStep : -1;
+    chordState = ChordEngine.transition(chordState, ChordEngine.actions.noteOn(midi));
+    renderChordFeedback();
+
+    if (chordState.phase === 'INVERSION_DRILL' || chordState.phase === 'INVERSION_COMPLETE') {
+      var newStep = chordState.inversionDrill ? chordState.inversionDrill.currentStep : -1;
+      if (newStep > prevStep) {
+        flashKey(midi, 'flash-green');
+      } else if (chordState.inversionDrill && chordState.inversionDrill.wrongInversion) {
+        flashKey(midi, 'flash-red');
+        // Flash the correct bass note on all octaves
+        var correctBassPC = chordState.inversionDrill.steps[chordState.inversionDrill.currentStep].bassPC;
+        for (var m = FIRST_MIDI; m <= LAST_MIDI; m++) {
+          if (m % 12 === correctBassPC) flashKey(m, 'flash-green', 800);
+        }
+      }
+      renderInversionDrill();
+      if (chordState.phase === 'INVERSION_COMPLETE') renderJournal();
+      return;
+    }
+
+    if (chordState.phase === 'CHORD_COMPLETE' || chordState.phase === 'PROGRESSION_COMPLETE') {
+      chordState.heldNotes.forEach(function(n) { flashKey(n, 'flash-green'); });
+      onChordComplete();
+    }
+    return;
+  }
+
   // Route to jam mode if active
   if (activeGameMode === 'jam' && jamState.phase === 'JAMMING') {
     jamState = JamSession.transition(jamState, JamSession.actions.playNote(midi, Date.now()));
@@ -1678,7 +1873,26 @@ function handleNote(midi) {
   }
 
   if (state.phase !== 'TRAINING') {
-    midiLog(`<span class="skip">free play</span>`);
+    // In scale trainer free play: playing a root note selects that scale
+    if (activeGameMode === 'scale') {
+      var playedPC = midi % 12;
+      var matchedRoot = null;
+      ScaleEngine.ROOTS.forEach(function(r) {
+        if (ScaleEngine.NAME_TO_SEMI[r] === playedPC) matchedRoot = r;
+      });
+      if (matchedRoot) {
+        pinnedRoot = matchedRoot;
+        scalePickerEl.querySelectorAll('button').forEach(function(b) {
+          b.classList.toggle('active', b.dataset.root === matchedRoot);
+        });
+        updateStartButton();
+        midiLog(`<span class="note">selected ${matchedRoot} major</span>`);
+      } else {
+        midiLog(`<span class="skip">free play</span>`);
+      }
+    } else {
+      midiLog(`<span class="skip">free play</span>`);
+    }
     return;
   }
 
@@ -1862,7 +2076,8 @@ function renderJournal() {
   // Merge both journals, re-number sequentially
   const scaleEntries = state.journal.map(e => ({ ...e, type: 'scale' }));
   const melodyEntries = melodyState.journal.map(e => ({ ...e, type: 'melody' }));
-  const all = [...scaleEntries, ...melodyEntries];
+  const chordEntries = chordState.journal.map(e => ({ ...e, type: e.type || 'chord' }));
+  const all = [...scaleEntries, ...melodyEntries, ...chordEntries];
   const total = all.length;
 
   journalEl.querySelector('summary').textContent = `Session Log (${total} round${total !== 1 ? 's' : ''})`;
@@ -1873,8 +2088,12 @@ function renderJournal() {
       const secs = (entry.durationMs / 1000).toFixed(1);
       const dirShort = entry.direction === 'ascending' ? '\u2191' : entry.direction === 'descending' ? '\u2193' : '\u2195';
       tr.innerHTML = `<td>${i + 1}</td><td>${entry.root} ${dirShort}</td><td>${entry.mode === 'guided' ? 'G' : entry.mode === 'shadowed' ? 'S' : 'B'}</td><td>${entry.accuracy}%</td><td class="${entry.clean ? 'clean-yes' : 'clean-no'}">${entry.clean ? '\u2713' : '\u2717'}</td><td>${secs}s</td>`;
-    } else {
+    } else if (entry.type === 'melody') {
       tr.innerHTML = `<td>${i + 1}</td><td>\u266B ${entry.melodyName}</td><td>${entry.key}</td><td>${entry.accuracy}%</td><td>${entry.rating}</td><td>${entry.total}pts</td>`;
+    } else if (entry.type === 'chord') {
+      tr.innerHTML = `<td>${i + 1}</td><td>\u266C ${entry.progressionName}</td><td>${entry.key}</td><td>${entry.correctCount}/${entry.totalChords}</td><td class="clean-yes">\u2713</td><td></td>`;
+    } else if (entry.type === 'inversion') {
+      tr.innerHTML = `<td>${i + 1}</td><td>\u266C ${entry.chordName} inversions</td><td></td><td>3/3</td><td class="clean-yes">\u2713</td><td></td>`;
     }
     journalBody.appendChild(tr);
   });
@@ -1910,7 +2129,9 @@ async function loadSamples() {
     catch (e) { return; }
   }
   const loads = [];
-  for (let m = FIRST_MIDI; m <= LAST_MIDI; m++) {
+  const SAMPLE_FIRST = 36; // C2
+  const SAMPLE_LAST = 84;  // C6
+  for (let m = SAMPLE_FIRST; m <= SAMPLE_LAST; m++) {
     loads.push(
       fetch(midiToSamplePath(m))
         .then(r => r.arrayBuffer())
@@ -2020,6 +2241,7 @@ function listenToInput(portId) {
       handleNote(note);
     } else if (status === 0x80 || (status === 0x90 && vel === 0)) {
       midiLog(`<span class="ch">ch${ch}</span> NoteOff <span class="note">${name}</span> (${note})`);
+      handleNoteOff(note);
     } else {
       midiLog(`<span class="ch">ch${ch}</span> status:0x${d[0].toString(16)} d1:${d[1]} d2:${d[2]}`);
     }
@@ -2124,8 +2346,12 @@ document.getElementById('mode-tabs').addEventListener('click', e => {
   melodyPanelEl.classList.toggle('active', tab === 'melody');
   circlePanelEl.classList.toggle('active', tab === 'circle');
   jamPanelEl.classList.toggle('active', tab === 'jam');
+  chordPanelEl.classList.toggle('active', tab === 'chord');
   melodyResultEl.classList.remove('show');
-  // Stop jam if switching away
+  // Stop chord/jam if switching away
+  if (chordState.phase !== 'IDLE' && tab !== 'chord') {
+    chordState = ChordEngine.transition(chordState, ChordEngine.actions.stop());
+  }
   if (jamState.phase === 'JAMMING' && tab !== 'jam') {
     jamState = JamSession.transition(jamState, JamSession.actions.stopJam(Date.now()));
     stopJamTimer();
@@ -2672,6 +2898,296 @@ function renderJamResult() {
     el.classList.remove('scale-highlight', 'root-mark');
     el.querySelector('.label').textContent = '';
   });
+}
+
+// ── NoteOff handler ───────────────────────────────────────────
+function handleNoteOff(midi) {
+  if (activeGameMode === 'chord' && (chordState.phase === 'PLAYING' || chordState.phase === 'FREE_CHORD' || chordState.phase === 'CHORD_COMPLETE' || chordState.phase === 'INVERSION_DRILL')) {
+    chordState = ChordEngine.transition(chordState, ChordEngine.actions.noteOff(midi));
+    renderChordFeedback();
+  }
+}
+
+// ── Chord Mode ────────────────────────────────────────────────
+const chordPanelEl = document.getElementById('chord-panel');
+const chordKeySelectEl = document.getElementById('chord-key-select');
+const chordProgSelectEl = document.getElementById('chord-prog-select');
+const chordStartBtn = document.getElementById('chord-start-btn');
+const chordProgDisplayEl = document.getElementById('chord-progression-display');
+const chordStatusEl = document.getElementById('chord-status');
+const chordFeedbackEl = document.getElementById('chord-feedback');
+const chordHeldEl = document.getElementById('chord-held');
+const chordResultEl = document.getElementById('chord-result');
+const chordResultTitleEl = document.getElementById('chord-result-title');
+const chordProgControlsEl = document.getElementById('chord-prog-controls');
+const chordInvControlsEl = document.getElementById('chord-inv-controls');
+const chordInvKeySelectEl = document.getElementById('chord-inv-key-select');
+const chordInvChordSelectEl = document.getElementById('chord-inv-chord-select');
+const chordInvStartBtn = document.getElementById('chord-inv-start-btn');
+
+let chordState = ChordEngine.createChordSession();
+let chordSubMode = 'progression';
+let chordAdvanceTimer = null;
+
+// Populate selectors
+ScaleEngine.ROOTS.forEach(function(r) {
+  var opt = document.createElement('option');
+  opt.value = r;
+  opt.textContent = r + ' major';
+  chordKeySelectEl.appendChild(opt);
+});
+
+// Group progressions by category
+var categories = {};
+ChordEngine.PROGRESSIONS.forEach(function(p) {
+  if (!categories[p.category]) categories[p.category] = [];
+  categories[p.category].push(p);
+});
+var categoryOrder = ['classical', 'pop', 'jazz', 'blues'];
+var categoryLabels = { classical: 'Classical / Fundamentals', pop: 'Pop / Rock', jazz: 'Jazz', blues: 'Blues' };
+categoryOrder.forEach(function(cat) {
+  if (!categories[cat]) return;
+  var group = document.createElement('optgroup');
+  group.label = categoryLabels[cat] || cat;
+  categories[cat].forEach(function(p) {
+    var opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = p.name;
+    group.appendChild(opt);
+  });
+  chordProgSelectEl.appendChild(group);
+});
+
+// Populate inversion drill selectors
+ScaleEngine.ROOTS.forEach(function(r) {
+  var opt = document.createElement('option');
+  opt.value = r;
+  opt.textContent = r;
+  chordInvKeySelectEl.appendChild(opt);
+});
+
+ChordEngine.DIATONIC_TRIADS.forEach(function(t) {
+  var opt = document.createElement('option');
+  opt.value = t.degree;
+  opt.textContent = t.roman + ' (' + t.quality + ')';
+  chordInvChordSelectEl.appendChild(opt);
+});
+
+chordInvStartBtn.addEventListener('click', function() {
+  var key = chordInvKeySelectEl.value;
+  var degree = parseInt(chordInvChordSelectEl.value);
+  var triad = ChordEngine.DIATONIC_TRIADS.find(function(t) { return t.degree === degree; });
+  if (!triad) return;
+
+  chordState = ChordEngine.transition(chordState, ChordEngine.actions.startInversionDrill(key, triad));
+  renderInversionDrill();
+  highlightChordOnKeyboard();
+});
+
+function renderInversionDrill() {
+  if (!chordState.inversionDrill) return;
+  var drill = chordState.inversionDrill;
+
+  if (chordState.phase === 'INVERSION_COMPLETE') {
+    chordStatusEl.textContent = drill.chordName + ' \u2014 all inversions complete!';
+    chordFeedbackEl.innerHTML = '<span style="color:var(--green)">Nice work!</span>';
+    chordProgDisplayEl.innerHTML = '';
+    drill.steps.forEach(function(step) {
+      var card = document.createElement('div');
+      card.className = 'chord-card done';
+      card.innerHTML = '<div class="roman">' + step.label + '</div><div class="name">' + drill.chordName + '</div>';
+      chordProgDisplayEl.appendChild(card);
+    });
+    Object.values(keyElements).forEach(function(el) {
+      el.classList.remove('scale-highlight', 'root-mark');
+      el.querySelector('.label').textContent = '';
+    });
+    return;
+  }
+
+  var step = drill.steps[drill.currentStep];
+  chordStatusEl.textContent = 'Play ' + drill.chordName + ' \u2014 ' + step.label;
+
+  if (drill.wrongInversion) {
+    var bassNoteName = ScaleEngine.NOTE_NAMES[step.bassPC];
+    chordFeedbackEl.innerHTML = '<span style="color:var(--red)">Right chord, wrong inversion \u2014 put ' + bassNoteName + ' in the bass</span>';
+  } else {
+    chordFeedbackEl.textContent = '';
+  }
+
+  // Show progress cards
+  chordProgDisplayEl.innerHTML = '';
+  drill.steps.forEach(function(s, i) {
+    var card = document.createElement('div');
+    card.className = 'chord-card';
+    if (i < drill.currentStep) card.classList.add('done');
+    if (i === drill.currentStep) card.classList.add('current');
+    card.innerHTML = '<div class="roman">' + s.label + '</div><div class="name">' + drill.chordName + '</div>';
+    chordProgDisplayEl.appendChild(card);
+  });
+}
+
+// Sub-mode toggle
+document.getElementById('chord-sub-modes').addEventListener('click', function(e) {
+  var btn = e.target.closest('button');
+  if (!btn) return;
+  chordSubMode = btn.dataset.submode;
+  document.querySelectorAll('#chord-sub-modes button').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+
+  if (chordState.phase !== 'IDLE') {
+    chordState = ChordEngine.transition(chordState, ChordEngine.actions.stop());
+  }
+
+  chordProgControlsEl.style.display = chordSubMode === 'progression' ? '' : 'none';
+  chordInvControlsEl.style.display = chordSubMode === 'inversions' ? '' : 'none';
+
+  if (chordSubMode === 'free') {
+    chordState = ChordEngine.transition(chordState, ChordEngine.actions.startFreeChord());
+    chordStatusEl.textContent = 'Play any chord';
+    chordFeedbackEl.textContent = '';
+    chordStartBtn.style.display = 'none';
+  } else if (chordSubMode === 'inversions') {
+    chordStartBtn.style.display = 'none';
+    chordStatusEl.textContent = 'Practice chord inversions';
+    chordFeedbackEl.textContent = '';
+  } else {
+    chordStartBtn.style.display = '';
+    chordStatusEl.textContent = '';
+    chordFeedbackEl.textContent = '';
+  }
+  chordResultEl.classList.remove('show');
+  chordHeldEl.textContent = '';
+  renderChordProgression();
+});
+
+// Start/Stop
+chordStartBtn.addEventListener('click', function() {
+  if (chordState.phase === 'PLAYING' || chordState.phase === 'CHORD_COMPLETE') {
+    chordState = ChordEngine.transition(chordState, ChordEngine.actions.stop());
+    chordStartBtn.textContent = 'Start';
+    chordStartBtn.classList.remove('stop');
+    chordStatusEl.textContent = '';
+    chordFeedbackEl.textContent = '';
+    chordHeldEl.textContent = '';
+    renderChordProgression();
+    return;
+  }
+
+  var progId = chordProgSelectEl.value;
+  var key = chordKeySelectEl.value;
+  if (!progId || !key) return;
+
+  chordState = ChordEngine.transition(chordState, ChordEngine.actions.startProgression(progId, key, Date.now()));
+  chordResultEl.classList.remove('show');
+  chordStartBtn.textContent = 'Stop';
+  chordStartBtn.classList.add('stop');
+  renderChordProgression();
+  renderChordStatus();
+  highlightChordOnKeyboard();
+});
+
+function renderChordProgression() {
+  chordProgDisplayEl.innerHTML = '';
+  if (!chordState.progression) return;
+  chordState.progression.forEach(function(chord, i) {
+    var card = document.createElement('div');
+    card.className = 'chord-card';
+    if (i < chordState.currentIndex) card.classList.add('done');
+    if (i === chordState.currentIndex && (chordState.phase === 'PLAYING' || chordState.phase === 'CHORD_COMPLETE')) card.classList.add('current');
+    card.innerHTML = '<div class="roman">' + chord.roman + '</div><div class="name">' + chord.name + '</div>';
+    chordProgDisplayEl.appendChild(card);
+  });
+}
+
+function renderChordStatus() {
+  if (chordState.phase === 'PLAYING' && chordState.progression) {
+    var chord = chordState.progression[chordState.currentIndex];
+    var scaleNotes = ScaleEngine.getScaleNotes(chordState.config.key);
+    var notes = ChordEngine.CHORD_TEMPLATES[chord.quality].map(function(i) {
+      var rootSemi = ScaleEngine.NAME_TO_SEMI[scaleNotes[chord.degree - 1]];
+      return ScaleEngine.NOTE_NAMES[(rootSemi + i) % 12];
+    });
+    chordStatusEl.textContent = 'Play: ' + chord.name + ' (' + notes.join(' ') + ')';
+  }
+}
+
+function renderChordFeedback() {
+  if (chordState.phase === 'FREE_CHORD') {
+    if (chordState.identifiedChord) {
+      var ic = chordState.identifiedChord;
+      chordFeedbackEl.innerHTML = '<span style="color:var(--green)">' + ic.displayName + ' (' + ic.inversion + ' inversion)</span>';
+    } else if (chordState.heldNotes.length > 0) {
+      var names = chordState.heldNotes.map(function(m) { return ScaleEngine.NOTE_NAMES[m % 12]; });
+      chordFeedbackEl.textContent = names.join(' ') + '...';
+    } else {
+      chordFeedbackEl.textContent = '';
+    }
+    return;
+  }
+
+  // Show held notes
+  if (chordState.heldNotes.length > 0) {
+    var heldNames = chordState.heldNotes.map(function(m) { return ScaleEngine.NOTE_NAMES[m % 12]; });
+    chordHeldEl.textContent = 'Holding: ' + heldNames.join(' ');
+  } else {
+    chordHeldEl.textContent = '';
+  }
+
+  if (chordState.lastMatch) {
+    var inv = chordState.lastMatch.inversion;
+    var invText = inv === 'root' ? 'root position' : inv + ' inversion';
+    chordFeedbackEl.innerHTML = '<span style="color:var(--green)">\u2713 ' + chordState.lastMatch.name + ' \u2014 ' + invText + '</span>';
+  }
+}
+
+function highlightChordOnKeyboard() {
+  // Clear existing highlights
+  Object.values(keyElements).forEach(function(el) {
+    el.classList.remove('scale-highlight', 'root-mark');
+    el.querySelector('.label').textContent = '';
+  });
+
+  if (chordState.phase !== 'PLAYING' || !chordState.progression) return;
+
+  var chord = chordState.progression[chordState.currentIndex];
+  // Highlight all octaves of chord tones on keyboard
+  for (var midi = FIRST_MIDI; midi <= LAST_MIDI; midi++) {
+    if (chord.pcs.has(midi % 12)) {
+      var el = keyElements[midi];
+      if (el) el.classList.add('scale-highlight');
+    }
+  }
+}
+
+function onChordComplete() {
+  renderChordProgression();
+  renderChordFeedback();
+
+  if (chordState.phase === 'PROGRESSION_COMPLETE') {
+    chordStatusEl.textContent = 'Progression complete!';
+    chordStartBtn.textContent = 'Start';
+    chordStartBtn.classList.remove('stop');
+    chordResultTitleEl.textContent = chordState.config.progressionName + ' in ' + chordState.config.key + ' \u2014 done!';
+    chordResultEl.classList.add('show');
+    renderJournal();
+    // Clear keyboard
+    Object.values(keyElements).forEach(function(el) {
+      el.classList.remove('scale-highlight', 'root-mark');
+      el.querySelector('.label').textContent = '';
+    });
+    return;
+  }
+
+  // Auto-advance after 1 second
+  chordAdvanceTimer = setTimeout(function() {
+    chordState = ChordEngine.transition(chordState, ChordEngine.actions.advance());
+    renderChordProgression();
+    renderChordStatus();
+    highlightChordOnKeyboard();
+    chordFeedbackEl.textContent = '';
+    chordHeldEl.textContent = '';
+  }, 1000);
 }
 
 // ── Init ──────────────────────────────────────────────────────
