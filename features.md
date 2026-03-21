@@ -34,8 +34,9 @@
 - [x] Play in any key (melodies encoded as scale degrees)
 - [x] PWA with offline support
 
+- [x] Jam Mode: free-form playing scored on staying in key
+
 ## Scale Trainer Enhancements
-- [ ] Free mode: extended free play with heatmap of scale degrees played
 - [ ] Minor scales (natural, harmonic, melodic)
 
 ## Chord Mode

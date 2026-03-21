@@ -600,6 +600,7 @@ describe('all modules load in shared browser global scope', () => {
       'melody-data.js',
       'melody-engine.js',
       'circle-walk.js',
+      'jam-session.js',
     ];
 
     // Concatenate all scripts (stripping module.exports) to simulate browser loading
@@ -621,6 +622,7 @@ describe('all modules load in shared browser global scope', () => {
         MelodyData: typeof MelodyData !== 'undefined',
         MelodyEngine: typeof MelodyEngine !== 'undefined',
         CircleWalk: typeof CircleWalk !== 'undefined',
+        JamSession: typeof JamSession !== 'undefined',
       };
     `;
 
@@ -637,6 +639,7 @@ describe('all modules load in shared browser global scope', () => {
     assert.ok(context._result.MelodyData, 'MelodyData should be defined');
     assert.ok(context._result.MelodyEngine, 'MelodyEngine should be defined');
     assert.ok(context._result.CircleWalk, 'CircleWalk should be defined');
+    assert.ok(context._result.JamSession, 'JamSession should be defined');
   });
 
   it('modules can call each other after loading', () => {
